@@ -20,7 +20,7 @@ class StochasticSimulator(object):
 class SPManager(ABC):
 
     @abstractmethod
-    def __init__(self,amnt_of_sps):
+    def __init__(self,length,rates):
         pass
 
     @abstractmethod

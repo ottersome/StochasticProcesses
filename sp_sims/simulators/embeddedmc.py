@@ -24,12 +24,12 @@ class ExponentialSumSP(StochasticSimulator):
         super().__init__(length)
         self.rate = rate
 
-    def generate_history():
+    def generate_history(self):
         # Always generate new tape
-        tape = np.random.exponential(self.n,self.p,self.length)
+        return np.random.exponential(1/self.rate,self.length)
 
     # Add functions that are binomial stochastic process spicific
-    def _specific():
+    def _specific(self):
         pass
    
 
@@ -62,6 +62,7 @@ class EmbeddedMarkC_BD(SPManager):
     # Can we have an api for distributions?
     # we will assume for now all variables are identically distributed.
     def __init__(self, length,rates):
+        print("We are setting up our embedded markov chian")
         self.length = length
 
         self.a_rate = rates['lambda']
@@ -70,22 +71,30 @@ class EmbeddedMarkC_BD(SPManager):
         self.a_prob = self.a_rate/(self.a_rate+self.s_rate)
         self.s_prob = self.s_rate/(self.a_rate+self.s_rate)
 
-        self.holding_times = ExponentialSumSP(length,self.a_rate+self.s_rate)
 
     # We also need our state transitions
     def generate_history(self, initial_state):
-        # This initial State will be Discrete
+        exp_sp = ExponentialSumSP(self.length,self.a_rate+self.s_rate)
+        self.holding_times = exp_sp.generate_history()
         
         # We can initialize this before hand because the probability 
         # distribution at every point is the same
-        bds = np.random.choice([-1,1],self.length-1,p=[self.s_prob, self.a_prob])
+        birth_or_death = np.random.choice([-1,1],self.length-1,p=[self.s_prob, self.a_prob])
         states = [initial_state]
 
         for i in range(self.length-1):
-            states.append(states[-1] + bds[i])
+            if states[-1]==0:
+                new_time = np.random.exponential(scale=(1/self.a_rate))
+                self.holding_times[i] = new_time
+                birth_or_death[i] = 1
+
+            states.append(states[-1] + birth_or_death[i])
+        # Manually fix last holding time
+        if states[-1] == 0 : self.holding_times[-1] = np.random.exponential(scale=(1/self.a_rate))
 
         #This returns our tape to be later managed by statistics
         return (self.holding_times,states);
+
     def simulate_n_processes(self):
         pass
 
@@ -98,11 +107,11 @@ class RaceOfExponentials(SPManager):
 
     def generate_history(self,initial_state):
         # Create two clocks racing for length
-        race = np.zeros(shape=[self.length-1,2])
-        # Birth
-        race[:,0] = np.random.exponential(scale=(1/self.a_rate),size=self.length-1)
+        race = np.zeros(shape=[self.length,2])
         # Death
-        race[:,1] = np.random.exponential(scale=(1/self.s_rate),size=self.length-1)
+        race[:,0] = np.random.exponential(scale=(1/self.s_rate),size=self.length)
+        # Birth
+        race[:,1] = np.random.exponential(scale=(1/self.a_rate),size=self.length)
         
         # Now get min and the index
         holding_times = np.min(race,axis=1)# Values
@@ -116,7 +125,7 @@ class RaceOfExponentials(SPManager):
             cur_state = states[-1]
             change = bd[i]
             if cur_state == 0:# We only take birth 
-                holding_times[i] = race[i,0]
+                holding_times[i] = race[i,1]
                 change = 1
             states.append(cur_state + change)
 

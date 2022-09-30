@@ -1,0 +1,20 @@
+{
+  "configurations": {
+    "Runny: Launch": {
+      "adapter": "debugpy",
+      "filetypes": [ "python" ],
+      "configuration": {
+        "name": "Runny: Launch",
+        "type": "python",
+        "request": "launch",
+        "cwd": "~/Projects/StochasticProcesses/",
+        "python": "~/miniconda3/envs/py38/bin/python",
+        "stopOnEntry": true,
+        "console": "externalTerminal",
+        "debugOptions": [],
+        "args" : ["1000","1"],
+        "program": "~/Projects/StochasticProcesses/main.py"
+      }
+    }
+  }
+}
