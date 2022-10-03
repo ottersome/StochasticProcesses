@@ -98,6 +98,41 @@ class EmbeddedMarkC_BD(SPManager):
     def simulate_n_processes(self):
         pass
 
+class PoissonFight(SPManager):
+    def __init__(self,amnt_events,sampling_interval,rates):
+        # Sampling inteval will modify our rates
+
+        self.rate_arr = rates['lambda']*sampling_interval
+        self.rate_ser = rates['mu']*sampling_interval
+        self.sampl_int = sampling_interval
+        self.amnt_evets = amnt_events
+
+
+        # We fix rates to fit this intevals of time
+        self.time_length = amnt_events*(1/(self.rate_arr+self.rate_ser))
+        self.holding_variation = (1/(self.rate_arr+self.rate_ser)**2)
+        self.time_length += amnt_events*(2*self.holding_variation)# Just to hold the variations as well
+
+    def generate_history(self,initial_state):
+        # We have two poisson processes fighting 
+        birth = np.random.poisson(self.rate_arr,size=(amnt_events))
+        death = np.random.poisson(self.rate_death,size=(amnt_events))
+
+        trend = birth-death
+
+        for i in range(amnt_events):
+            movement = birth-death
+            if(states[-1] == 0):
+                movement = birth
+            states.append(min(states[-1] + movement,0))
+
+        holding_times = np.full_like(states, self.sampl_int)
+
+        return (holding_times,states)
+    def simulate_n_processes(self):
+        pass
+
+
 class RaceOfExponentials(SPManager):
 
     def __init__(self, length,rates):
