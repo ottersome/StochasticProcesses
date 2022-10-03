@@ -7,7 +7,7 @@ from sp_sims.statistics.statistics import *
 def compare_stationary_event(length,initial_state):
     
     # Craete Tapes for Embedded
-    rates = {"lambda": 0.1,"mu":0.1} #This should keep us within the corner
+    rates = {"lambda": 1.0,"mu":1.5} #This should keep us within the corner
     embedded_sp = EmbeddedMarkC_BD(length,rates)
     emb_hold_tape, emb_state_tape = embedded_sp.generate_history(initial_state)
 
@@ -36,12 +36,12 @@ def compare_stationary_event(length,initial_state):
     # Get Probabilities
     emb_probs = emb_hist/np.sum(emb_hist)
     race_probs = race_hist/np.sum(race_hist)
-    poi_probs = race_hist/np.sum(poi_hist)
+    poi_probs = poi_hist/np.sum(poi_hist)
 
     # Expected Values
     emb_exp = emb_probs@emb_x_axis
     race_exp = race_probs@race_x_axis
-    poi_exp = race_probs@poi_x_axis
+    poi_exp = poi_probs@poi_x_axis
 
     print("ExpectedValue for Embedded MC: {}. ExpectedValue for Race: {}".format(emb_exp,race_exp))
 
@@ -83,12 +83,13 @@ if __name__ == '__main__':
     # Create the two competitive processes
     print("Starting with numerical analysis")
 
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 4:
         print("Please provide lenth for simulations")
         exit(-1)
 
     length = int(sys.argv[1])
     sampling_rate = float (sys.argv[2])
-    #  compare_stationary_event(length,initial_state=10000)
-    compare_stationary_sample(length,sampling_rate,0)
+    initial_state = int (sys.argv[3])
+    compare_stationary_event(length,initial_state=initial_state)
+    #  compare_stationary_sample(length,sampling_rate,0)
 

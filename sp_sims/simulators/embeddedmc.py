@@ -28,7 +28,7 @@ class ExponentialSumSP(StochasticSimulator):
         # Always generate new tape
         return np.random.exponential(1/self.rate,self.length)
 
-    # Add functions that are binomial stochastic process spicific
+    # Add functions that are exponential process spicific(if any)
     def _specific(self):
         pass
    
@@ -48,7 +48,7 @@ class ExponentialMinP(StochasticSimulator):
         # This should be equal in distribution to the holdin gtimes
 
 
-    # Add functions that are binomial stochastic process spicific
+    # Add functions that are binomial stochastic process specific
     def _specific():
         pass
  
@@ -82,8 +82,11 @@ class EmbeddedMarkC_BD(SPManager):
         birth_or_death = np.random.choice([-1,1],self.length-1,p=[self.s_prob, self.a_prob])
         states = [initial_state]
 
+        # We go through all the n-1 transitions
         for i in range(self.length-1):
             if states[-1]==0:
+                # In case of being at state 0 
+                # we only have the probability of moving right
                 new_time = np.random.exponential(scale=(1/self.a_rate))
                 self.holding_times[i] = new_time
                 birth_or_death[i] = 1
