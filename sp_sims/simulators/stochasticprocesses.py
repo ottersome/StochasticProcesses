@@ -9,7 +9,6 @@ class BinomialSP(StochasticSimulator):
     def __init__(length,n,p):
         super().__init__(length)
         self.n = n ; self.p = p;
-
     def generate_history():
         # Always generate new tape
         tape = np.random.binomial(self.n,self.p,self.length)
@@ -100,6 +99,22 @@ class EmbeddedMarkC_BD(SPManager):
 
     def simulate_n_processes(self):
         pass
+class PoissonPath(SPManager):
+    # Homogeneous Poi -> Single Rate
+    def __init__(self,num_jumps,rate):
+        self.rate = rate
+        self.amnt_events = num_jumps
+    def generate_history(self):
+        # Use an exponential to generate intervals so we stay in the real time.
+        times = np.random.exponential(scale=1/self.rate,size=self.amnt_events)
+        times_tape = [0]
+        times_tape.extend(np.cumsum(times))
+        states = np.arange(0,len(times_tape))
+
+        return (times_tape, states)
+    def simulate_n_processes(self):
+        pass
+
 
 class PoissonFight(SPManager):
 

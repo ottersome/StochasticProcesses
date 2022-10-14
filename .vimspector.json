@@ -12,8 +12,10 @@
         "stopOnEntry": true,
         "console": "externalTerminal",
         "debugOptions": [],
-        "args" : ["1000","1","1000"],
-        "program": "~/Projects/StochasticProcesses/main.py"
+//        "args" : ["1000","1","1000"],
+        "args" : ["100","1.5","0.5","100","0"],
+        //"program": "~/Projects/StochasticProcesses/main.py"
+        "program": "~/Projects/StochasticProcesses/mappois.py"
       }
     }
   }
