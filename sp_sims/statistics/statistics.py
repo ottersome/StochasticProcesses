@@ -84,7 +84,7 @@ def sampd_stationary_state(sampling_rate,state_tapes,holding_t_tapes):
     bias = unique[0]
     counter = np.zeros_like(unique) # Will keep counters for state
 
-    # Get Time at which first sample on each itnerval happens
+    # Get Time at which first sample on each interval happens
     first_sample_per_interval = starting_times+(sampling_rate-(starting_times%sampling_rate))
     indices  = first_sample_per_interval<transition_times
     sampling_amounts_per_state = (transition_times-first_sample_per_interval)/sampling_rate
@@ -92,11 +92,43 @@ def sampd_stationary_state(sampling_rate,state_tapes,holding_t_tapes):
     sampling_amounts_per_state[indices] += 1
     
     # At this point we get how many counts we've got per interval 
-    for i,state in enumerate(unique):
-        counter[i] = np.sum(sampling_amounts_per_state[return_inverse == state])
+    for i,state in enumerate(unique): counter[i] = np.sum(sampling_amounts_per_state[return_inverse == state])
     
     return unique,counter
     
+
+# Tapes will be a column vectors
+def simple_sample(sampling_rate,state_tapes,holding_t_tapes):
+    # We just have to get a certain percentage of the states
+    # Create array of unique elements
+    if len(state_tapes) != len(holding_t_tapes):
+        print("Sizes of tapes are not equivalent. Please make sure they \
+                correspond to each other.")
+        return
+    # Need to find final time
+    # Final Exponential Time only tells us  about
+    transition_times = np.cumsum(holding_t_tapes)
+    starting_times = np.copy(transition_times) - holding_t_tapes
+    ending_times = starting_times+holding_t_tapes
+    #  ending_time = starting_times[-1]+transition_times[-1]
+
+    # Get our sample tap
+    states = []
+    state_tapes = np.asarray(state_tapes)
+    for i,time in enumerate(np.arange(0,ending_times[-1],sampling_rate)):
+        indices  = (time >= starting_times) & (time < ending_times)
+        state_fallen_into = state_tapes[indices]
+        assert len(state_fallen_into) == 1
+        #  assert (len(state_fallen_into) != 1)
+        states.append(state_fallen_into[0])
+         
+
+    return np.asarray(states)
+    
+
+
+
+
 
 
 

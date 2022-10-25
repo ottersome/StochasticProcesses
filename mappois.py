@@ -66,16 +66,23 @@ if __name__ == '__main__':
 
     # This does for now. Ill add argparse later if needed 
     levels_of_n = []
+
+    # Three levels of rates
     rates = [0.1, 1.0, 10] # TODO: add it as a cmdline param later
+    
     final_samples  = []
     length = 1000
-    for rate in rates:
+
+    for rate in rates:# Each distribution
+
         sampled_rates = [] #Hopefully this is asymptotically normal
         print("Working with rate: ",rate)
+
         for i in range(length):# Create a stochastic sequence of 1k realizations
             if i % 10==0: 
                 print("Generating episode ",i)
             sampled_rates.append(sampled_poisson(args,rate))
+
         final_samples.append(sampled_rates)
 
     assert(len(final_samples) == len(rates))

@@ -13,9 +13,11 @@
         "console": "externalTerminal",
         "debugOptions": [],
 //        "args" : ["1000","1","1000"],
-        "args" : ["100","1.5","0.5","100","0"],
+        //"args" : ["100","1.5","0.5","100","0"],
+        "args" : ["--length","1000","--mu","1.5","--lambda","1.2","--samprate","1","--init_state","0"],
         //"program": "~/Projects/StochasticProcesses/main.py"
-        "program": "~/Projects/StochasticProcesses/mappois.py"
+        //"program": "~/Projects/StochasticProcesses/mappois.py"
+        "program": "~/Projects/StochasticProcesses/viterbi.py"
       }
     }
   }
