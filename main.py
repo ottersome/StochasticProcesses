@@ -36,6 +36,18 @@ def compare_stationary_event(length,initial_state):
     #  subs[0].hist(x=emb_x_axis, bins=len(emb_x_axis), weights=emb_probs,density=True)
     subs[0].set_title('Embedded Markov Chian')
     subs[0].set_ylim(bottom=0,top=max_density)
+
+    maxx = np.max(emb_x_axis)
+    x = np.linspace(1,maxx,100)
+    # Theres a different expression for n = 0. Will add later
+    meep = lambda expo: (rates['lambda']/rates['mu'])**expo
+    y = meep(x)
+    y /= 1 + np.sum([meep(i-1) for i in range(1,1000)])
+    y0 = 1/(1+ np.sum([meep(i-1) for i in range(1,1000)]))
+    x = np.insert(x,0,0)
+    y = np.insert(y,0,y0)
+    subs[0].plot(x,y,c='r')
+
     #  subs[1].hist(x=race_x_axis, bins=len(race_x_axis), weights=race_probs,density=True)
     subs[1].bar(race_x_axis, race_probs)
     subs[1].set_title('Exponential Races')
