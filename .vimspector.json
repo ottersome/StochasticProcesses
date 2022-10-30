@@ -17,7 +17,8 @@
         "args" : ["--length","1000","--mu","1.5","--lambda","1.2","--samprate","1","--init_state","0"],
         //"program": "~/Projects/StochasticProcesses/main.py"
         //"program": "~/Projects/StochasticProcesses/mappois.py"
-        "program": "~/Projects/StochasticProcesses/viterbi.py"
+        //"program": "~/Projects/StochasticProcesses/viterbi.py"
+        "program": "~/Projects/StochasticProcesses/deltat.py"
       }
     }
   }

@@ -20,29 +20,29 @@ class AbsStatisticGenerator(ABC):
         pass
 
     # Im afraind I will end up abusing the amount of tapes. Lets see
-def state_transitions(self):
-    # Because each run may have different states we will generate
-    # unque elements per run
-
+def state_transitions(times, states):
+    # Unique_Elements might seem redundant but maybe we wont always have a state space that starts at 0
     unique_elements,inverse, counts, = np.unique(
+            states,
             axis=0,
             return_counts=True,
             return_inverse=True)
     
-    # of unique elements 
-    num_unique_elements = [len(num_unique_elements) for ue in unique_elements]
+    no_unique_states_visited = len(unique_elements)
+    transition_matrix = np.zeros((no_unique_states_visited,no_unique_states_visited))
+    # Diagonal Matrix -> PSD(?) -> Nice properties we can analyize
+
+    # Get State Pairs TODO: This only works when we have initial state = 0
+    for itx in range(len(inverse)-1):
+        i = inverse[itx]
+        j = inverse[itx+1]
+        transition_matrix[i,j] += times[itx]
+
+    # Normalize
+    row_sums = transition_matrix.sum(axis=1)
     
-    # With inverse we can form transitions
-    init_states = inverse[:-1]
-    next_states = inverse[1:]
+    return transition_matrix / row_sums[:,np.newaxis]
 
-    # State Transitions Matrices
-    state_transitions = np.array(1,)
-
-    # Form Tuples
-    tuples = np.array([init_states, next_states])
-    # Count the unique tuples
-    tuple_count = np,unique()
 
 def eventd_stationary_state(state_tape,holding_t_tapes):
     # Still assuming tape matrix
@@ -114,10 +114,10 @@ def simple_sample(sampling_rate,state_tapes,holding_t_tapes):
 
     # Get our sample tap
     states = []
-    state_tapes = np.asarray(state_tapes)
+    state_tapo = np.asarray(state_tapes)
     for i,time in enumerate(np.arange(0,ending_times[-1],sampling_rate)):
         indices  = (time >= starting_times) & (time < ending_times)
-        state_fallen_into = state_tapes[indices]
+        state_fallen_into = state_tapo[indices]
         assert len(state_fallen_into) == 1
         #  assert (len(state_fallen_into) != 1)
         states.append(state_fallen_into[0])
