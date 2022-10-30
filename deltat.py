@@ -78,9 +78,10 @@ if __name__ == '__main__':
     ax[2].set_title("Transitions from sampled states at sr:{}".format(args.samprate/2))
 
     fig.tight_layout()
-    fig.set_size_inches(10,10)
+    fig.set_size_inches(50,50)
     plt.savefig('samprate_{}_lam_{}_mu_{}.jpg'.format(
-        args.samprate,args.lam,args.mu
+        args.samprate,args.lam,args.mu,
+        format='eps',dpi=600
         ))
     plt.show()
 
