@@ -1,3 +1,4 @@
+import numpy as np
 import sys
 import matplotlib.pyplot as plt
 import argparse
@@ -31,28 +32,71 @@ def argparser(parser: argparse.ArgumentParser):
                         default = 0,
                         help='Initial State in the real line.(Amnt of current events)')
 
-if __name__ == '__main__':
-    # Create Markov Embedded Simulator
-    parser  = argparse.ArgumentParser()
-    argparser(parser)
-    args = parser.parse_args()
+def get_stationary():
+
+    #  initial = np.zeros((1,trans_matx_samp.shape[1]))
+    #  initial[0,0] = 1
+
+    #  res = np.copy(trans_matx_samp)
+    #  frob_hor_ax = []
+    #  frob_norms = []
+    #  axs[0].plot(res,label="Power Method n={}".format(1))
+    #
+    #  for i in range(2,power_val):
+    #      res = res@trans_matx_samp
+    #      if np.log2(i) % 1 == 0:
+    #          frob_norms.append(np.linalg.norm(trans_matx_samp-res,'fro'))
+    #          fin = initial@res
+    #          axs[0].plot(fin.flatten(),label="Power Method n={}".format(i))
+    #
+    #  axs[0].hist(state_tape,bins=trans_matx_samp.shape[1],density=True,label="Sampled Histogram")
+
+    #Plot the true distributoin
+    #  maxx = trans_matx_samp.shape[1]+1
+    #  x = np.linspace(1,maxx,100)
+    #  # Theres a different expression for n = 0. Will add later
+    #  meep = lambda expo: (args.lam/args.mu)**expo
+    #  y = meep(x)
+    #  y /= 1 + np.sum([meep(i-1) for i in range(1,1000)])
+    #  y0 = 1/(1+ np.sum([meep(i-1) for i in range(1,1000)]))
+    #  x = np.insert(x,0,0)
+    #  y = np.insert(y,0,y0)
+    #  axs[0].plot(x,y,label="Closed Form Solution")
+    pass
+
+def frob_comparison(state_tape,samp_rate=1,power_val=8):
+    fig,axs = plt.subplots(1,1)
+
+    # Sweet jesus have mercy on the memory
+    trans_matx_samp = []
+    squared_nth_deg = []
+    frob_norms = []
+    for i in range(0,int(np.log2(power_val)+1)):
+        pow2  = np.power(2,i)
+        sampled_tape = simple_sample(samp_rate/pow2, state_tape, holdTimes_tape)
+        trans_matx_samp.append(state_transitions(np.full_like(state_tape,args.samprate/pow2,dtype=np.float16), state_tape))
+        nth_mat = np.linalg.matrix_power(trans_matx_samp[-1],i+1)
+        frob_norms.append(np.linalg.norm(trans_matx_samp[0]-nth_mat,ord='fro'))
 
 
-    # Created Tapes
-    rates = {"lambda": args.lam,"mu":args.mu} #This should keep us within the corner
-    #  embedded_sp = EmbeddedMarkC_BD(args.length,rates)
-    #  emb_hold_tape, emb_state_tape = embedded_sp.generate_history(args.init_state)
-    roe = RaceOfExponentials(args.length,rates)
-    holdTimes_tape, state_tape = roe.generate_history(args.init_state)
+    # Frobeneius Norm
+    xticks = [2**i for i in range(int(np.log2(power_val)+1))]
+    axs.plot(xticks,frob_norms,label="Norms")
+    axs.set_xticks(xticks)
 
-    # Sample it
-    sampled_tape_ori = simple_sample(args.samprate, state_tape, holdTimes_tape)
-    sampled_tape_half = simple_sample(args.samprate/2, state_tape, holdTimes_tape)
+    fig.tight_layout()
+    fig.set_size_inches(10,10)
+    plt.savefig('from_norms'.format(
+        args.samprate,args.lam,args.mu,
+        format='eps',dpi=200
+        ))
+    plt.legend()
+    plt.show()
+
+def show_trans_matrix(holdTimes_tape, state_tape):
 
     fig, ax = plt.subplots(1,3)
-    
     #- Analyze the tapes
-
     # Event Driven Empirical Probabilities
     trans_matx_event = state_transitions(holdTimes_tape, state_tape)
     im = ax[0].imshow(trans_matx_event)
@@ -60,7 +104,7 @@ if __name__ == '__main__':
         for j in range(trans_matx_event.shape[1]):
             ax[0].text(j,i,"%2.2f " % trans_matx_event[i,j],ha="center",va="center",color="w")
     ax[0].set_title("Event Driven Transitions")
-    
+
     # Sampled Transition Probabilities
     trans_matx_samp = state_transitions(np.full_like(sampled_tape_ori,args.samprate), sampled_tape_ori)
     im = ax[1].imshow(trans_matx_samp)
@@ -84,6 +128,28 @@ if __name__ == '__main__':
         format='eps',dpi=600
         ))
     plt.show()
+
+
+if __name__ == '__main__':
+    # Create Markov Embedded Simulator
+    parser  = argparse.ArgumentParser()
+    argparser(parser)
+    args = parser.parse_args()
+
+
+    # Created Tapes
+    rates = {"lambda": args.lam,"mu":args.mu} #This should keep us within the corner
+    #  embedded_sp = EmbeddedMarkC_BD(args.length,rates)
+    #  emb_hold_tape, emb_state_tape = embedded_sp.generate_history(args.init_state)
+    roe = RaceOfExponentials(args.length,rates)
+    holdTimes_tape, state_tape = roe.generate_history(args.init_state)
+
+    # Sample it
+    # Calculate Stationary Distribution
+    frob_comparison(state_tape,power_val=1024)
+
+
+
 
 
 
