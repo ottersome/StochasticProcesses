@@ -32,11 +32,11 @@ def argparser(parser: argparse.ArgumentParser):
                         default = 0,
                         help='Initial State in the real line.(Amnt of current events)')
 
-def get_stationary():
-
+def get_stationary(state_tape,holdTimes_tape,samp_rate ):
+    #  trans_matrx_samp = state_transitions(np.full_like(state_tape,samprate,dtype=np.float16), state_tape)
+    #
     #  initial = np.zeros((1,trans_matx_samp.shape[1]))
     #  initial[0,0] = 1
-
     #  res = np.copy(trans_matx_samp)
     #  frob_hor_ax = []
     #  frob_norms = []
@@ -50,8 +50,8 @@ def get_stationary():
     #          axs[0].plot(fin.flatten(),label="Power Method n={}".format(i))
     #
     #  axs[0].hist(state_tape,bins=trans_matx_samp.shape[1],density=True,label="Sampled Histogram")
-
-    #Plot the true distributoin
+    #
+    #  # Plot the true distributoin
     #  maxx = trans_matx_samp.shape[1]+1
     #  x = np.linspace(1,maxx,100)
     #  # Theres a different expression for n = 0. Will add later
@@ -64,8 +64,17 @@ def get_stationary():
     #  axs[0].plot(x,y,label="Closed Form Solution")
     pass
 
-def frob_comparison(state_tape,samp_rate=1,power_val=8):
+def tri_digmatalgo(N,a,b,c,d,x):
+    pass
+
+
+def frob_comparison(state_tape,holdTimes_tape,samp_rate=1,power_val=64):
+
     fig,axs = plt.subplots(1,1)
+
+    # 
+    event_driven = state_transitions(holdTimes_tape, state_tape)
+    event_diff_norms = []
 
     # Sweet jesus have mercy on the memory
     trans_matx_samp = []
@@ -73,16 +82,24 @@ def frob_comparison(state_tape,samp_rate=1,power_val=8):
     frob_norms = []
     for i in range(0,int(np.log2(power_val)+1)):
         pow2  = np.power(2,i)
-        sampled_tape = simple_sample(samp_rate/pow2, state_tape, holdTimes_tape)
-        trans_matx_samp.append(state_transitions(np.full_like(state_tape,args.samprate/pow2,dtype=np.float16), state_tape))
-        nth_mat = np.linalg.matrix_power(trans_matx_samp[-1],i+1)
-        frob_norms.append(np.linalg.norm(trans_matx_samp[0]-nth_mat,ord='fro'))
 
+        sampled_tape = simple_sample(samp_rate*pow2, state_tape, holdTimes_tape)
+
+        trans_matx_samp.append(state_transitions(np.full_like(sampled_tape,1/(samp_rate*pow2),dtype=np.float16), sampled_tape))
+
+        nth_mat = np.linalg.matrix_power(trans_matx_samp[-1],i+1)
+
+        frob_norms.append(np.linalg.norm(trans_matx_samp[0]-nth_mat,ord='fro'))
+        event_diff_norms.append(np.linalg.norm(event_driven-nth_mat,ord='fro'))
 
     # Frobeneius Norm
     xticks = [2**i for i in range(int(np.log2(power_val)+1))]
-    axs.plot(xticks,frob_norms,label="Norms")
+    axs.plot(xticks,frob_norms,label="Norms of diff from rate 1")
+    axs.plot(xticks,event_diff_norms,label="Norms of diff from event driven",c='r')
     axs.set_xticks(xticks)
+    
+    axs.set_xscale('log')
+
 
     fig.tight_layout()
     fig.set_size_inches(10,10)
@@ -93,10 +110,15 @@ def frob_comparison(state_tape,samp_rate=1,power_val=8):
     plt.legend()
     plt.show()
 
-def show_trans_matrix(holdTimes_tape, state_tape):
+def show_trans_matrix(holdTimes_tape, state_tape,samp_rate):
 
     fig, ax = plt.subplots(1,3)
-    #- Analyze the tapes
+    
+    # Sample the Tapes
+    sampled_tape_ori = simple_sample(samp_rate, state_tape, holdTimes_tape)
+    sampled_tape_half = simple_sample(samp_rate/2, state_tape, holdTimes_tape)
+
+    
     # Event Driven Empirical Probabilities
     trans_matx_event = state_transitions(holdTimes_tape, state_tape)
     im = ax[0].imshow(trans_matx_event)
@@ -146,7 +168,13 @@ if __name__ == '__main__':
 
     # Sample it
     # Calculate Stationary Distribution
-    frob_comparison(state_tape,power_val=1024)
+    
+    #  frob_comparison(state_tape,holdTimes_tape,power_val=1024)
+    
+    #  show_trans_matrix(holdTimes_tape, state_tape,args.samprate)
+    frob_comparison(state_tape, holdTimes_tape)
+    #  get_stationary()
+   
 
 
 

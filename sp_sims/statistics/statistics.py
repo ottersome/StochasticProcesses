@@ -19,7 +19,7 @@ class AbsStatisticGenerator(ABC):
     def show_state_dist(self) :
         pass
 
-    # Im afraind I will end up abusing the amount of tapes. Lets see
+# Im afraind I will end up abusing the amount of tapes. Lets see
 def state_transitions(times, states):
     # Unique_Elements might seem redundant but maybe we wont always have a state space that starts at 0
     unique_elements,inverse, counts, = np.unique(
@@ -64,6 +64,7 @@ def __init__(self, tapes, dt):
 def sampd_stationary_state(sampling_rate,state_tapes,holding_t_tapes):
     # We just have to get a certain percentage of the states
     # Create array of unique elements
+    sampling_time = 1/sampling_rate
     if len(state_tapes) != len(holding_t_tapes):
         print("Sizes of tapes are not equivalent. Please make sure they \
                 correspond to each other.")
@@ -85,9 +86,9 @@ def sampd_stationary_state(sampling_rate,state_tapes,holding_t_tapes):
     counter = np.zeros_like(unique) # Will keep counters for state
 
     # Get Time at which first sample on each interval happens
-    first_sample_per_interval = starting_times+(sampling_rate-(starting_times%sampling_rate))
+    first_sample_per_interval = starting_times+(starting_times%sampling_time)
     indices  = first_sample_per_interval<transition_times
-    sampling_amounts_per_state = (transition_times-first_sample_per_interval)/sampling_rate
+    sampling_amounts_per_state = (transition_times-first_sample_per_interval)/sampling_time
     sampling_amounts_per_state[sampling_amounts_per_state<0] = 0
     sampling_amounts_per_state[indices] += 1
     
@@ -101,6 +102,7 @@ def sampd_stationary_state(sampling_rate,state_tapes,holding_t_tapes):
 def simple_sample(sampling_rate,state_tapes,holding_t_tapes):
     # We just have to get a certain percentage of the states
     # Create array of unique elements
+    sampling_time = 1/sampling_rate
     if len(state_tapes) != len(holding_t_tapes):
         print("Sizes of tapes are not equivalent. Please make sure they \
                 correspond to each other.")
@@ -115,7 +117,7 @@ def simple_sample(sampling_rate,state_tapes,holding_t_tapes):
     # Get our sample tap
     states = []
     state_tapo = np.asarray(state_tapes)
-    for i,time in enumerate(np.arange(0,ending_times[-1],sampling_rate)):
+    for i,time in enumerate(np.arange(0,ending_times[-1],sampling_time)):
         indices  = (time >= starting_times) & (time < ending_times)
         state_fallen_into = state_tapo[indices]
         assert len(state_fallen_into) == 1

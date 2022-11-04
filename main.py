@@ -1,5 +1,6 @@
 # Should be Run by default so it will be a script from the get go
 import sys
+import time
 import matplotlib.pyplot as plt
 from sp_sims.simulators.stochasticprocesses import *
 from sp_sims.statistics.statistics import *
@@ -108,6 +109,6 @@ if __name__ == '__main__':
     sampling_rate = float (sys.argv[2])
     initial_state = int (sys.argv[3])
 
-    compare_stationary_event(length,initial_state=initial_state)
-    #  compare_stationary_sample(length,sampling_rate,0)
+    #  compare_stationary_event(length,initial_state=initial_state)
+    compare_stationary_sample(length,sampling_rate,0)
 
