@@ -76,8 +76,7 @@ def frob_comparison(state_tape,holdTimes_tape,samp_rate=1,power_val=64):
     event_driven = state_transitions(holdTimes_tape, state_tape)
     event_diff_norms = []
 
-    # Sweet jesus have mercy on the memory
-    trans_matx_samp = []
+    # Sweet jesus have mercy on the memory trans_matx_samp = []
     squared_nth_deg = []
     frob_norms = []
     for i in range(0,int(np.log2(power_val)+1)):
@@ -109,6 +108,25 @@ def frob_comparison(state_tape,holdTimes_tape,samp_rate=1,power_val=64):
         ))
     plt.legend()
     plt.show()
+
+def power_matrix(holdTimes_tape, state_tape, powers=64):
+    fig, ax = plt.subplots(1,1)
+    fig.tight_layout()
+    fig.set_size_inches(50,50)
+
+    # We will be using event driven distributions for the moemnt being
+    
+    # Event Driven Empirical Probabilities
+    trans_matx_event = state_transitions(holdTimes_tape, state_tape)
+    for z in range(powers):
+        ax.imshow(trans_matx_event)
+        for i in range(trans_matx_event.shape[0]):
+            for j in range(trans_matx_event.shape[1]):
+                ax.text(j,i,"%2.2f " % trans_matx_event[i,j],ha="center",va="center",color="w")
+        ax.set_title("Event Driven Transitions")
+        plt.savefig('./Images/transition_matrices/trasmat_pow_'+str(z+1),dpi=300)
+        trans_matx_event = trans_matx_event @ trans_matx_event
+    print('Done with saving images')
 
 def show_trans_matrix(holdTimes_tape, state_tape,samp_rate):
 
@@ -172,7 +190,8 @@ if __name__ == '__main__':
     #  frob_comparison(state_tape,holdTimes_tape,power_val=1024)
     
     #  show_trans_matrix(holdTimes_tape, state_tape,args.samprate)
-    frob_comparison(state_tape, holdTimes_tape)
+    #frob_comparison(state_tape, holdTimes_tape)
+    power_matrix(holdTimes_tape,state_tape,64)
     #  get_stationary()
    
 
