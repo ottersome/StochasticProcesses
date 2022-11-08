@@ -68,17 +68,33 @@ def tri_digmatalgo(N,a,b,c,d,x):
     pass
 
 
+
+
 def frob_comparison(state_tape,holdTimes_tape,samp_rate=1,power_val=64):
 
     fig,axs = plt.subplots(1,1)
 
-    # 
+    # Save Event Driven(For Reference)
     event_driven = state_transitions(holdTimes_tape, state_tape)
-    event_diff_norms = []
+    fig, ax = plt.subplots(1,1)
+    fig.tight_layout()
+    fig.set_size_inches(10,10)
+    for i in range(event_driven.shape[0]):
+        for j in range(event_driven.shape[1]):
+            ax.text(j,i,"{:03.2f} ".format(event_driven[i,j]),ha="center",va="center",color="w")
+    ax.imshow(event_driven)
+    ax.set_title("Event-Driven Transitions Matrix")
+    plt.savefig('./Images/event_driven_matrx.png' ,dpi=150)
+    plt.clf()
+    plt.close()
 
-    # Sweet jesus have mercy on the memory trans_matx_samp = []
+    # Get ready for Storing
+    event_diff_norms = []
+    trans_matx_samp = []
     squared_nth_deg = []
     frob_norms = []
+
+    # Cycle through division of intervals
     for i in range(0,int(np.log2(power_val)+1)):
         pow2  = np.power(2,i)
 
@@ -86,7 +102,8 @@ def frob_comparison(state_tape,holdTimes_tape,samp_rate=1,power_val=64):
 
         trans_matx_samp.append(state_transitions(np.full_like(sampled_tape,1/(samp_rate*pow2),dtype=np.float16), sampled_tape))
 
-        nth_mat = np.linalg.matrix_power(trans_matx_samp[-1],i+1)
+        nth_mat = np.linalg.matrix_power(trans_matx_samp[-1],pow2)
+        #  nth_mat = np.linalg.matrix_power(trans_matx_samp[-1],i+1)
 
         frob_norms.append(np.linalg.norm(trans_matx_samp[0]-nth_mat,ord='fro'))
         event_diff_norms.append(np.linalg.norm(event_driven-nth_mat,ord='fro'))
@@ -97,7 +114,7 @@ def frob_comparison(state_tape,holdTimes_tape,samp_rate=1,power_val=64):
     axs.plot(xticks,event_diff_norms,label="Norms of diff from event driven",c='r')
     axs.set_xticks(xticks)
     
-    axs.set_xscale('log')
+    #  axs.set_xscale('log')
 
 
     fig.tight_layout()
@@ -109,22 +126,33 @@ def frob_comparison(state_tape,holdTimes_tape,samp_rate=1,power_val=64):
     plt.legend()
     plt.show()
 
-def power_matrix(holdTimes_tape, state_tape, powers=64):
-    fig, ax = plt.subplots(1,1)
-    fig.tight_layout()
-    fig.set_size_inches(50,50)
-
+def power_matrix(holdTimes_tape, state_tape, powers=16, samp_rate=-1):
     # We will be using event driven distributions for the moemnt being
     
     # Event Driven Empirical Probabilities
-    trans_matx_event = state_transitions(holdTimes_tape, state_tape)
+    if samp_rate < 0:
+        trans_matx_event = state_transitions(holdTimes_tape, state_tape)
+    else:
+        samped_tape = simple_sample(samp_rate, state_tape, holdTimes_tape)
+        trans_matx_event = state_transitions(
+                np.full_like(samped_tape,samp_rate),
+                samped_tape)
+
     for z in range(powers):
-        ax.imshow(trans_matx_event)
+        fig, ax = plt.subplots(1,1)
+        fig.tight_layout()
+        fig.set_size_inches(10,10)
+
         for i in range(trans_matx_event.shape[0]):
             for j in range(trans_matx_event.shape[1]):
-                ax.text(j,i,"%2.2f " % trans_matx_event[i,j],ha="center",va="center",color="w")
-        ax.set_title("Event Driven Transitions")
-        plt.savefig('./Images/transition_matrices/trasmat_pow_'+str(z+1),dpi=300)
+                ax.text(j,i,"{:03.2f} ".format(trans_matx_event[i,j]),ha="center",va="center",color="w")
+        ax.imshow(trans_matx_event)
+        ax.set_title("Transitions Matrix, rate {}, pow {}".format(samp_rate,str(z+1)))
+        plt.savefig(
+                './Images/transition_matrices_samped_rate{}/trasmat_rate_{}_pow_{:02d}.png'
+                .format(int(samp_rate),int(samp_rate),z+1),dpi=150)
+        plt.clf()
+        plt.close()
         trans_matx_event = trans_matx_event @ trans_matx_event
     print('Done with saving images')
 
@@ -135,7 +163,6 @@ def show_trans_matrix(holdTimes_tape, state_tape,samp_rate):
     # Sample the Tapes
     sampled_tape_ori = simple_sample(samp_rate, state_tape, holdTimes_tape)
     sampled_tape_half = simple_sample(samp_rate/2, state_tape, holdTimes_tape)
-
     
     # Event Driven Empirical Probabilities
     trans_matx_event = state_transitions(holdTimes_tape, state_tape)
@@ -190,8 +217,8 @@ if __name__ == '__main__':
     #  frob_comparison(state_tape,holdTimes_tape,power_val=1024)
     
     #  show_trans_matrix(holdTimes_tape, state_tape,args.samprate)
-    #frob_comparison(state_tape, holdTimes_tape)
-    power_matrix(holdTimes_tape,state_tape,64)
+    frob_comparison(state_tape, holdTimes_tape)
+    #  power_matrix(holdTimes_tape,state_tape,16,samp_rate=args.samprate)
     #  get_stationary()
    
 
