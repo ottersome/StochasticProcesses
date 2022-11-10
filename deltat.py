@@ -8,7 +8,7 @@ from sp_sims.statistics.statistics import *
 def argparser(parser: argparse.ArgumentParser):
     parser.add_argument('--length',
                         dest='length',
-                        default=1000,
+                        default=10000,
                         type=int,
                         help='Length of episode in discrete realizations.')
     parser.add_argument('--mu',
@@ -93,12 +93,12 @@ def frob_comparison(state_tape,holdTimes_tape,samp_rate=1,power_val=64):
 
     # Frobeneius Norm
     xticks = [2**i for i in range(int(np.log2(power_val)+1))]
+
     axs.plot(xticks,frob_norms,label="Norms of diff from rate 1")
     axs.plot(xticks,event_diff_norms,label="Norms of diff from event driven",c='r')
     axs.set_xticks(xticks)
     
     axs.set_xscale('log')
-
 
     fig.tight_layout()
     fig.set_size_inches(10,10)
@@ -170,12 +170,66 @@ def show_trans_matrix(holdTimes_tape, state_tape,samp_rate):
     plt.show()
 
 
+def convergence_of_transitionmat(holdTimes_tape, state_tape,samp_rate):
+
+    # We will be using event driven distributions for the moemnt being
+    # Event Driven Empirical Probabilities
+    # Create Multiple Tapes
+    multi_samp_tape = [] 
+    print("Working with state tape of size : "+str(len(state_tape)))
+    mats = []
+    max_no_states = 0
+    for k in range(2,int(np.log2(len(state_tape)))+1):
+        print("Getting Tape for : {}".format(2**k))
+        multi_samp_tape.append(state_tape[:2**k])
+        cur_mat = state_transitions(np.full_like(state_tape[:2**k],samp_rate),
+                        simple_sample(samp_rate,state_tape[:2**k],np.full_like(state_tape[:2**k],samp_rate)))
+        max_no_states = max(max_no_states,cur_mat.shape[0])
+        print("Size of array {} is {} ".format(k,cur_mat.shape))
+        mats.append(cur_mat)
+
+    # 
+    print("Biggest Shape : {}".format(max_no_states))
+    print("Information about our new arrays:")
+    np_mats = np.zeros((len(mats),max_no_states,max_no_states))
+
+    for i in range(len(mats)): np_mats[i,:,:] = np.pad(mats[i],(
+            (0,max_no_states-mats[i].shape[0]), (0,max_no_states-mats[i].shape[1])
+        ),'constant',constant_values=0)
+    print(np_mats[0,:,:])
+    frob_norm_diff = []
+    for k,trans_matrx in enumerate(np_mats):
+        fig, ax = plt.subplots(1,1)
+        fig.tight_layout()
+        fig.set_size_inches(10,10)
+        ax.imshow(trans_matrx)
+        for i in range(trans_matrx.shape[0]):
+            for j in range(trans_matrx.shape[1]):
+                ax.text(j,i,"%2.2f " % trans_matrx[i,j],ha="center",va="center",color="w")
+        ax.set_title("Estimation of Transition at {} samples".format(2**k))
+        file_name = './Images/transition_mat_per_samp/trasmat_samps_{:03d}.png'.format(k)
+        print('Storing {} ...'.format(file_name))
+        plt.savefig(file_name,dpi=150)
+        plt.clf()
+        if k >0:
+            frob_norm_diff.append(np.linalg.norm(trans_matrx-np_mats[k-1]))
+
+    # Save Frob Norm
+    fig, ax = plt.subplots(1,1)
+    fig.tight_layout()
+    fig.set_size_inches(10,10)
+    plt.plot(range(len(frob_norm_diff)),frob_norm_diff)
+    plt.title("Frob Norm of PathLength Vs Convergence of Sampled TransMatx")
+    plt.savefig('./Images/transition_mat_per_samp/frob_norm.png',dpi=150)
+
+    print('Done with saving images')
+
+
 if __name__ == '__main__':
     # Create Markov Embedded Simulator
     parser  = argparse.ArgumentParser()
     argparser(parser)
     args = parser.parse_args()
-
 
     # Created Tapes
     rates = {"lambda": args.lam,"mu":args.mu} #This should keep us within the corner
@@ -188,15 +242,9 @@ if __name__ == '__main__':
     # Calculate Stationary Distribution
     
     #  frob_comparison(state_tape,holdTimes_tape,power_val=1024)
-    
+    convergence_of_transitionmat(holdTimes_tape,state_tape,1)
     #  show_trans_matrix(holdTimes_tape, state_tape,args.samprate)
     #frob_comparison(state_tape, holdTimes_tape)
-    power_matrix(holdTimes_tape,state_tape,64)
+    # power_matrix(holdTimes_tape,state_tape,64)
     #  get_stationary()
-   
-
-
-
-
-
 
