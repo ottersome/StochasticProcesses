@@ -29,7 +29,6 @@ def power_series_log(mat,power):
 
     # Test for convergence
     print('||B-I||={}'.format(np.linalg.norm(mat-np.eye(mat.shape[0]),ord='fro')))
-
     final_mat = np.zeros_like(mat)
     for k in range(1,power):
         cur_mat = (-1)**(k+1) * (1/k) *(mat-np.eye(mat.shape[0]))

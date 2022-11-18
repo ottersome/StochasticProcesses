@@ -155,7 +155,7 @@ class PoissonFight(SPManager):
         pass
 
 
-# @@
+# This method of simulating Markov Chains take 
 class RaceOfExponentials(SPManager):
 
     def __init__(self, length,rates):

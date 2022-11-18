@@ -207,6 +207,7 @@ def show_trans_matrix(holdTimes_tape, state_tape,samp_rate):
     plt.show()
 
 
+
 def convergence_of_transitionmat(holdTimes_tape, state_tape,samp_rate):
 
     # We will be using event driven distributions for the moemnt being
@@ -261,6 +262,7 @@ def convergence_of_transitionmat(holdTimes_tape, state_tape,samp_rate):
 
     print('Done with saving images')
 
+#  <<<<<<< HEAD
 def get_generator_matrix(holdTimes_tape,state_tape,basel_samprate=1, max_doubling_of_rate=12):
 
     mats = []
@@ -307,6 +309,58 @@ def get_generator_matrix(holdTimes_tape,state_tape,basel_samprate=1, max_doublin
     plt.savefig('./Images/gen_matrx_est/forb_norm.png')
     print("Estimated Generator matrices saved")
 
+#  =======
+def GeneratorFromTransition(holdTimes_tape, state_tape,samp_rate):
+
+    fig, ax = plt.subplots(2,2)
+    font_size = 4
+    samp_time = 1/samp_rate
+    alt_rate = samp_rate*(2**6)
+    alt_samp_time = 1/alt_rate
+    
+    # Sample the Tapes
+    sampled_tape_ori = simple_sample(samp_rate, state_tape, holdTimes_tape)
+    sampled_tape_half = simple_sample(alt_rate, state_tape, holdTimes_tape)
+    
+    # Sampled Transition Probabilities
+    trans_matx_samp = state_transitions(np.full_like(sampled_tape_ori,args.samprate), sampled_tape_ori)
+    im = ax[0,0].imshow(trans_matx_samp)
+    for i in range(trans_matx_samp.shape[0]):
+        for j in range(trans_matx_samp.shape[1]):
+            ax[0,0].text(j,i,"%.2f " % trans_matx_samp[i,j],ha="center",va="center",color="w",fontsize=font_size)
+    ax[0,0].set_title("Transitions from sampled states at sr:{}".format(args.samprate))
+
+    # Half the sampling rate
+    trans_matx_samp_half = state_transitions(np.full_like(sampled_tape_half,args.samprate/2,dtype=np.float16), sampled_tape_half)
+    im = ax[1,0].imshow(trans_matx_samp_half)
+    for i in range(trans_matx_samp_half.shape[0]):
+        for j in range(trans_matx_samp_half.shape[1]):
+            ax[1,0].text(j,i,"%.2f " % trans_matx_samp_half[i,j],ha="center",va="center",color="w",fontsize=font_size)
+    ax[1,0].set_title("Transitions from sampled states at sr:{}".format(args.samprate/2))
+
+    # Now the Generator Matrices
+    Q_ori = (trans_matx_samp/samp_time)-np.eye(trans_matx_samp.shape[0],trans_matx_samp.shape[1])/samp_time # + tineh
+    Q_halfy = (trans_matx_samp_half/alt_samp_time)-np.eye(trans_matx_samp_half.shape[0],trans_matx_samp_half.shape[1])/alt_samp_time # + tineh
+    im = ax[0,1].imshow(Q_ori)
+    for i in range(Q_ori.shape[0]):
+        for j in range(Q_ori.shape[1]):
+            ax[0,1].text(j,i,"%.2f " % Q_ori[i,j],ha="center",va="center",color="w",fontsize=font_size)
+    ax[0,1].set_title("Generator Matrix from sampled states at sr:{}".format(args.samprate))
+
+    im = ax[1,1].imshow(Q_halfy)
+    for i in range(Q_halfy.shape[0]):
+        for j in range(Q_halfy.shape[1]):
+            ax[1,1].text(j,i,"%.2f " % Q_halfy[i,j],ha="center",va="center",color="w",fontsize=font_size)
+    ax[1,1].set_title("Generator Matrix from sampled states at sr:{}".format(alt_rate))
+
+    fig.tight_layout()
+    fig.set_size_inches(10,10)
+    plt.savefig('GenMatrices_r{}_l{}_m{}.png'.format(
+        args.samprate,args.lam,args.mu,
+        format='eps',dpi=300
+        ))
+    plt.show()
+#  >>>>>>> fa445c4908338ead4f456689eb2a17dff18cb43e
 
 if __name__ == '__main__':
     # Create Markov Embedded Simulator
@@ -316,6 +370,7 @@ if __name__ == '__main__':
 
     # Created Tapes
     rates = {"lambda": args.lam,"mu":args.mu} #This should keep us within the corner
+    print("Working with rates lambda:{} mu:{}".format(args.lam,args.mu))
     #  embedded_sp = EmbeddedMarkC_BD(args.length,rates)
     #  emb_hold_tape, emb_state_tape = embedded_sp.generate_history(args.init_state)
     roe = RaceOfExponentials(args.length,rates)
@@ -325,12 +380,20 @@ if __name__ == '__main__':
     # Calculate Stationary Distribution
     
     #  frob_comparison(state_tape,holdTimes_tape,power_val=1024)
+#  <<<<<<< HEAD
     #  convergence_of_transitionmat(holdTimes_tape,state_tape,1)
     #  show_trans_matrix(holdTimes_tape, state_tape,args.samprate)
     # power_matrix(holdTimes_tape,state_tape,64)
     #frob_comparison(state_tape, holdTimes_tape)
+#  =======
+    # convergence_of_transitionmat(holdTimes_tape,state_tape,1)
+    #  show_trans_matrix(holdTimes_tape, state_tape,args.samprate)
+    # power_matrix(holdTimes_tape,state_tape,64)
+    #frob_comparison(state_tape, holdTimes_tape)
+    GeneratorFromTransition(holdTimes_tape, state_tape, args.samprate)
+#  >>>>>>> fa445c4908338ead4f456689eb2a17dff18cb43e
     #  power_matrix(holdTimes_tape,state_tape,16,samp_rate=args.samprate)
     #  get_stationary()
-    get_generator_matrix(holdTimes_tape, state_tape)
+    #  get_generator_matrix(holdTimes_tape, state_tape)
 
 
