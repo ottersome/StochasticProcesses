@@ -19,6 +19,10 @@ class AbsStatisticGenerator(ABC):
     def show_state_dist(self) :
         pass
 
+# I regret the previous name so this is a quick bandaid 
+def trans_matrix(times,states):
+    return state_transitions(times, states)
+
 # Im afraind I will end up abusing the amount of tapes. Lets see
 def state_transitions(times, states):
     # Unique_Elements might seem redundant but maybe we wont always have a state space that starts at 0
@@ -36,7 +40,8 @@ def state_transitions(times, states):
     for itx in range(len(inverse)-1):
         i = inverse[itx]
         j = inverse[itx+1]
-        transition_matrix[i,j] += times[itx]
+        #  transition_matrix[i,j] += times[itx]
+        transition_matrix[i,j] += 1
 
     # Normalize
     row_sums = transition_matrix.sum(axis=1)

@@ -75,7 +75,7 @@ def frob_comparison(state_tape,holdTimes_tape,samp_rate=1,power_val=64):
     fig,axs = plt.subplots(1,1)
 
     # Save Event Driven(For Reference)
-    event_driven = state_transitions(holdTimes_tape, state_tape)
+    event_driven = trans_matrix(holdTimes_tape, state_tape)
     fig, ax = plt.subplots(1,1)
     fig.tight_layout()
     fig.set_size_inches(10,10)
@@ -138,6 +138,7 @@ def power_matrix(holdTimes_tape, state_tape, powers=16, samp_rate=-1):
                 np.full_like(samped_tape,samp_rate),
                 samped_tape)
 
+    frob_norm_diff = []
     for z in range(powers):
         fig, ax = plt.subplots(1,1)
         fig.tight_layout()
@@ -153,7 +154,16 @@ def power_matrix(holdTimes_tape, state_tape, powers=16, samp_rate=-1):
                 .format(int(samp_rate),int(samp_rate),z+1),dpi=150)
         plt.clf()
         plt.close()
+        frob_norm_diff.append( np.linalg.norm(trans_matx_event - (trans_matx_event@trans_matx_event)))
         trans_matx_event = trans_matx_event @ trans_matx_event
+
+
+    fig, ax = plt.subplots(1,1)
+    fig.tight_layout()
+    fig.set_size_inches(10,10)
+    plt.plot(range(len(frob_norm_diff)),frob_norm_diff)
+    plt.title('From Norms of powers')
+    plt.savefig('./Images/transition_matrices_samped_rate{}/forb_norm.png'.format(int(samp_rate)))
     print('Done with saving images')
 
 def show_trans_matrix(holdTimes_tape, state_tape,samp_rate):
@@ -251,6 +261,52 @@ def convergence_of_transitionmat(holdTimes_tape, state_tape,samp_rate):
 
     print('Done with saving images')
 
+def get_generator_matrix(holdTimes_tape,state_tape,basel_samprate=1, max_doubling_of_rate=12):
+
+    mats = []
+    frob_norm_diff = []
+    last_trans_matx = np.zeros((0,0))
+    longest_state_spaces = 0
+    for k in range(0,max_doubling_of_rate+1):
+        # Set Figuresj
+        fig, ax = plt.subplots(1,1)
+        fig.tight_layout()
+        fig.set_size_inches(10,10)
+        # Sample
+        sampled_tape = simple_sample(basel_samprate*2**k, state_tape, holdTimes_tape)
+        trans_matrx = state_transitions(np.full_like(sampled_tape,basel_samprate),sampled_tape)
+        # Normalize
+        trans_matrx = (basel_samprate)*trans_matrx
+        mats.append(trans_matrx)
+        longest_state_spaces = max(longest_state_spaces,trans_matrx.shape[0])
+
+        # Show/Save Figure
+        ax.imshow(trans_matrx)
+        for i in range(trans_matrx.shape[0]):
+            for j in range(trans_matrx.shape[1]):
+                ax.text(j,i,"%2.2f " % trans_matrx[i,j],ha="center",va="center",color="w")
+        ax.set_title("Estimation of Transition at {} samples".format(2**k))
+        file_name = './Images/gen_matrx_est/trasmat_samps_{:03d}.png'.format(k)
+        print('Storing {} ...'.format(file_name))
+        plt.savefig(file_name,dpi=150)
+        plt.clf()
+    
+    # Pad the Matrices
+    mats = [
+            np.pad(
+                mat, 
+                ((longest_state_spaces-mat.shape[0]),
+                 (longest_state_spaces-mat.shape[1])),mode="constant",constant_values=0) for mat in mats]
+
+    # Frob Norm here
+    for k,mat in enumerate(mats):
+        if k >0:
+            frob_norm_diff.append(np.linalg.norm(mat-mat[k-1]))
+
+    plt.plot(range(frob_norm_diff),frob_norm_diff)
+    plt.savefig('./Images/gen_matrx_est/forb_norm.png')
+    print("Estimated Generator matrices saved")
+
 
 if __name__ == '__main__':
     # Create Markov Embedded Simulator
@@ -269,10 +325,12 @@ if __name__ == '__main__':
     # Calculate Stationary Distribution
     
     #  frob_comparison(state_tape,holdTimes_tape,power_val=1024)
-    convergence_of_transitionmat(holdTimes_tape,state_tape,1)
+    #  convergence_of_transitionmat(holdTimes_tape,state_tape,1)
     #  show_trans_matrix(holdTimes_tape, state_tape,args.samprate)
     # power_matrix(holdTimes_tape,state_tape,64)
-    frob_comparison(state_tape, holdTimes_tape)
+    #frob_comparison(state_tape, holdTimes_tape)
     #  power_matrix(holdTimes_tape,state_tape,16,samp_rate=args.samprate)
     #  get_stationary()
+    get_generator_matrix(holdTimes_tape, state_tape)
+
 
