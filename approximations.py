@@ -144,7 +144,7 @@ def GeneratorFromTransition(holdTimes_tape, state_tape,samp_rate,args):
 
     fig.suptitle(r'Transition Matrices and Generator Matrices for $\mu=${},$\lambda=${}'
                  .format(args.mu,args.lam))
-    plt.savefig('GenMatrices_r{}_l{}_m{}.png'.format(
+    plt.savefig('./Images/GenMatrices_r{}_l{}_m{}.png'.format(
         args.samprate,args.lam,args.mu,
         format='eps',dpi=300
         ))
