@@ -162,8 +162,11 @@ if __name__ == '__main__':
     #roe = RaceOfExponentials(args.length,rates)
     #holdTimes_tape, state_tape = roe.generate_history(args.init_state)
     
-    tbd = TrueBirthDeath(args.length,rates)
-    holdTimes_tape, state_tape = tbd.generate_history(args.init_state)
+    # tbd = TrueBirthDeath(args.length,rates)
+    # holdTimes_tape, state_tape = tbd.generate_history(args.init_state)
+
+    roe = EmbeddedMarkC_BD(args.length,rates)
+    holdTimes_tape, state_tape = roe.generate_history(args.init_state)
 
     # Show Transition Matrices
     fig, ax = plt.subplots(1,1)
