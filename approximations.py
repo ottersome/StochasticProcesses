@@ -165,6 +165,18 @@ if __name__ == '__main__':
     tbd = TrueBirthDeath(args.length,rates)
     holdTimes_tape, state_tape = tbd.generate_history(args.init_state)
 
+    # Show Transition Matrices
+    fig, ax = plt.subplots(1,1)
+    trans = trans_matrix(holdTimes_tape,state_tape)
+    plt.imshow(trans)
+    for i in range(trans.shape[0]):
+        for j in range(trans.shape[1]):
+            ax.text(j,i,"%.2f " % trans[i,j],ha="center",va="center",color="w",fontsize=4)
+    ax.set_title("Preliminary Transition transrix")
+
+    plt.show()
+    plt.close()
+
     if args.method == 'event_driven_mle':
         show_event_driven_mle(state_tape,holdTimes_tape,args)
     elif args.method == 'log_mat':
