@@ -196,3 +196,59 @@ class RaceOfExponentials(SPManager):
     def simulate_n_processes(self):
         pass
         
+# This method of simulating the true birth death process
+class TrueBirthDeath(SPManager):
+
+    def __init__(self, length,rates):
+        self.length = length
+        self.a_rate = rates['lambda']
+        self.s_rate = rates['mu']
+
+    def generate_history(self,initial_state):
+        BirthPos = np.random.exponential(scale=(1/self.a_rate),size=self.length)
+        Ages = np.random.exponential(scale=(1/self.s_rate),size=self.length)
+        
+        states = [initial_state]
+        holding_times = []
+        
+        BirthLocs = np.cumsum(BirthPos)
+        DeathLocs = BirthLocs + Ages
+        DeathLocs = np.sort(DeathLocs)
+        currTS = 0
+        
+        idxBirth = 0
+        idxDeath = 0
+        
+        for i in range(self.length):
+            if BirthLocs[idxBirth] < DeathLocs[idxDeath]:
+                states.append(states[-1] + 1)
+                holding_times.append(BirthLocs[idxBirth] - currTS)
+                currTS = BirthLocs[idxBirth]
+                idxBirth += 1
+            else:
+                states.append(states[-1] - 1)
+                holding_times.append(DeathLocs[idxDeath] - currTS)
+                currTS = DeathLocs[idxDeath]
+                idxDeath += 1
+                
+        # xaxis = np.cumsum(holding_times)
+        # xaxis = np.expand_dims(xaxis, 1)
+        # xaxis_full = np.concatenate((xaxis, xaxis), axis=1)
+        # xaxis_full = xaxis_full.flatten()
+        
+        # xaxis_full = np.concatenate(([0], xaxis_full))
+        
+        # states_one = np.array(states)
+        # states_one = np.expand_dims(states_one, 1)
+        # states_full = np.concatenate((states_one, states_one), axis=1)
+        # states_full = states_full.flatten()
+        # states_full = states_full[0:-1]
+        
+        # plt.plot(xaxis_full[0:1000], states_full[0:1000])
+        
+        states = states[0:-1]
+        
+        return holding_times,states
+
+    def simulate_n_processes(self):
+        pass
