@@ -159,8 +159,11 @@ if __name__ == '__main__':
     # Created Tapes
     rates = {"lambda": args.lam,"mu":args.mu} 
     print(f"Working with parameters mu:{args.mu} lambda:{args.lam}")
-    roe = RaceOfExponentials(args.length,rates)
-    holdTimes_tape, state_tape = roe.generate_history(args.init_state)
+    #roe = RaceOfExponentials(args.length,rates)
+    #holdTimes_tape, state_tape = roe.generate_history(args.init_state)
+    
+    tbd = TrueBirthDeath(args.length,rates)
+    holdTimes_tape, state_tape = tbd.generate_history(args.init_state)
 
     if args.method == 'event_driven_mle':
         show_event_driven_mle(state_tape,holdTimes_tape,args)
