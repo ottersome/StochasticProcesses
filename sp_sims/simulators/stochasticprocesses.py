@@ -59,7 +59,7 @@ class EmbeddedMarkC_BD(SPManager):
 
     # Can we have an api for distributions?
     # we will assume for now all variables are identically distributed.
-    def __init__(self, length,rates):
+    def __init__(self, length,rates,state_limit):
         print("We are setting up our embedded markov chian")
         self.length = length
 
@@ -68,6 +68,8 @@ class EmbeddedMarkC_BD(SPManager):
 
         self.a_prob = self.a_rate/(self.a_rate+self.s_rate)
         self.s_prob = self.s_rate/(self.a_rate+self.s_rate)
+
+        self.state_limit = state_limit
 
 
     # @@
@@ -88,6 +90,9 @@ class EmbeddedMarkC_BD(SPManager):
                 new_time = np.random.exponential(scale=(1/self.a_rate))
                 self.holding_times[i] = new_time
                 birth_or_death[i] = 1
+            if states[-1]==self.state_limit and birth_or_death[i] == 1: 
+                self.holding_times[i] = np.random.exponential(scale=(1/self.s_rate))
+                birth_or_death[i] = -1
 
             states.append(states[-1] + birth_or_death[i])
         
@@ -158,10 +163,11 @@ class PoissonFight(SPManager):
 # This method of simulating Markov Chains take 
 class RaceOfExponentials(SPManager):
 
-    def __init__(self, length,rates):
+    def __init__(self, length,rates, state_limit=-1):
         self.length = length
         self.a_rate = rates['lambda']
         self.s_rate = rates['mu']
+        self.state_limit = state_limit
 
     def generate_history(self,initial_state):
         # Create two clocks racing for length
@@ -185,11 +191,13 @@ class RaceOfExponentials(SPManager):
             if cur_state == 0 and change == -1:# We only take birth 
                 holding_times[i] = race[i,1]
                 change = 1
+            if cur_state == self.state_limit and change==1:
+                hodling_times = race[i,0]
+                change = -1
             states.append(cur_state + change)
 
         # Make sure last state is representative
         if states[-1] == 0: holding_times = race[-1,1]
-
 
         return holding_times,states
 
