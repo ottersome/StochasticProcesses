@@ -5,40 +5,8 @@ import argparse
 from sp_sims.simulators.stochasticprocesses import *
 from sp_sims.statistics.statistics import *
 from sp_sims.estimators.algos import *
-
-
-def argparser(parser: argparse.ArgumentParser):
-    parser.add_argument('--length',
-                        dest='length',
-                        default=10000,
-                        type=int,
-                        help='Length of episode in discrete realizations.')
-    parser.add_argument('--mu',
-                        dest='mu',
-                        default = .15,
-                        type=float,
-                        help='Service Rate')
-    parser.add_argument('--lambda',
-                        dest='lam',
-                        default=.10,
-                        type=float,
-                        help='Birth Rate')
-    parser.add_argument('--samprate',
-                        dest='samprate',
-                        default=1.0,
-                        type=float,
-                        help='Rate at which we sample real line.')
-    parser.add_argument('--init_state',
-                        dest='init_state',
-                        type=int,
-                        default = 0,
-                        help='Initial State in the real line.(Amnt of current events)')
-    parser.add_argument('--method',
-                        dest='method',
-                        choices=['event_driven_mle','log_mat','fixed_delta_t'],
-                        default = 'fixed_sampled_rate',
-                        help='Initial State in the real line.(Amnt of current events)')
-
+from sp_sims.sanitycheck.truebirthdeath import *
+from sp_sims.utils.utils import *
 
 def log_matrix_approx(state_tape, holdTimes_tape,args):
     # Setting up Figures fig,axs = plt.subplots(1,2)
@@ -61,8 +29,8 @@ def log_matrix_approx(state_tape, holdTimes_tape,args):
     axs[0].set_title(r'Transition matrix for $\Delta t=1/$ {}'.format(args.samprate))
 
     # Compute the Solution
-    Qdt = power_series_log(p_hat, 10)
-    Q = Qdt / samp_time
+    Qdt = power_series_log(p_hat, 64)
+    Q = Qdt / (samp_time)
 
     # Show the Gneeratort matrix recovered from it
     axs[1].imshow(Q)
@@ -71,7 +39,7 @@ def log_matrix_approx(state_tape, holdTimes_tape,args):
             axs[1].text(j,i,"%2.2f " % Q[i,j],ha="center",va="center",color="w",fontsize=font_size)
     axs[1].set_title(
             r"Estimated Generator Matrix through samples at $\Delta t = ${}. $\mu$:{} $\lambda$:{} ".format(args.samprate,args.mu,args.lam))
-    plt.savefig('Images/MLE_sample_driven'.format(
+    plt.savefig('Images/MLE_sample_log_dt{}_lam{},_mu{}.png'.format(
         args.samprate,args.lam,args.mu, format='eps',dpi=200))
     plt.show()
     print("Calculated. Displaying...")
@@ -114,7 +82,7 @@ def GeneratorFromTransition(holdTimes_tape, state_tape,samp_rate,args):
     # Sample the Tapes
     sampled_tape_ori = simple_sample(samp_rate, state_tape, holdTimes_tape)
     sampled_tape_alt = simple_sample(alt_rate, state_tape, holdTimes_tape)
-    
+   
     # Sampled Transition Probabilities
     print(f"Calculating Transition matrix at {samp_rate}")
     trans_matx_samp = state_transitions(np.full_like(sampled_tape_ori,args.samprate), sampled_tape_ori)
@@ -150,35 +118,42 @@ def GeneratorFromTransition(holdTimes_tape, state_tape,samp_rate,args):
         ))
     plt.show()
 
+
 if __name__ == '__main__':
     # Go through arguments
-    parser  = argparse.ArgumentParser()
-    argparser(parser)
-    args = parser.parse_args()
+    args = argparser()
 
     # Created Tapes
     rates = {"lambda": args.lam,"mu":args.mu} 
     print(f"Working with parameters mu:{args.mu} lambda:{args.lam}")
-    #roe = RaceOfExponentials(args.length,rates)
-    #holdTimes_tape, state_tape = roe.generate_history(args.init_state)
-    
-    # tbd = TrueBirthDeath(args.length,rates)
-    # holdTimes_tape, state_tape = tbd.generate_history(args.init_state)
 
-    roe = EmbeddedMarkC_BD(args.length,rates)
+    roe = RaceOfExponentials(args.length,rates,state_limit=args.state_limit)
     holdTimes_tape, state_tape = roe.generate_history(args.init_state)
+    
+    #  tbd = TrueBirthDeath(args.length,rates)
+    #  holdTimes_tape, state_tape = tbd.generate_history(args.init_state)
 
-    # Show Transition Matrices
-    fig, ax = plt.subplots(1,1)
-    trans = trans_matrix(holdTimes_tape,state_tape)
-    plt.imshow(trans)
-    for i in range(trans.shape[0]):
-        for j in range(trans.shape[1]):
-            ax.text(j,i,"%.2f " % trans[i,j],ha="center",va="center",color="w",fontsize=4)
-    ax.set_title("Preliminary Transition transrix")
+    # roe = EmbeddedMarkC_BD(args.length,rates, state_limit=args.state_limit)
+    # holdTimes_tape, state_tape = roe.generate_history(args.init_state)
 
-    plt.show()
-    plt.close()
+    # For Sanity Check Purposes
+    #  if args.show_cont_tmatx:  show_trans_matrx(holdTimes_tape, state_tape)
+    if args.show_cont_tmatx and args.state_limit > 0:
+        tgm = generate_true_gmatrix({"lam":args.lam, "mu":args.mu}, args.state_limit)
+        osm = one_step_matrx(tgm)
+        osm = one_step_matrx(tgm)
+        stat_dist = get_stat_dist(tgm)
+        #  stat_dist = stat_dist.flatten()
+        sampled_tape = simple_sample(args.samprate,state_tape,holdTimes_tape)
+        emp_state, x_axis = emp_steady_state_distribution(sampled_tape)
+
+        show_sanity_matrxs(
+                [tgm,osm, [stat_dist, emp_state]],
+                    ["True Generator Matrx",
+                    "Corresponding Single-Step matrx",
+                     "True Vs Empirical Stationary Distribution"])
+
+    print("Method being used : ",args.method)
 
     if args.method == 'event_driven_mle':
         show_event_driven_mle(state_tape,holdTimes_tape,args)

@@ -101,6 +101,12 @@ def sampd_stationary_state(sampling_rate,state_tapes,holding_t_tapes):
     for i,state in enumerate(unique): counter[i] = np.sum(sampling_amounts_per_state[return_inverse == state])
     
     return unique,counter
+
+def emp_steady_state_distribution(state_tape):
+    unique, count = np.unique(state_tape, return_counts=True)
+    total_count = np.sum(count)
+    return count/total_count, unique
+
     
 
 # Tapes will be a column vectors
