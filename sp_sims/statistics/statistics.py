@@ -34,7 +34,6 @@ def state_transitions(times, states):
     
     no_unique_states_visited = len(unique_elements)
     transition_matrix = np.zeros((no_unique_states_visited,no_unique_states_visited))
-    # Diagonal Matrix -> PSD(?) -> Nice properties we can analyize
 
     # Get State Pairs TODO: This only works when we have initial state = 0
     for itx in range(len(inverse)-1):
@@ -110,31 +109,31 @@ def emp_steady_state_distribution(state_tape):
     
 
 # Tapes will be a column vectors
-def simple_sample(sampling_rate,state_tapes,holding_t_tapes):
+def simple_sample(sampling_rate,state_tapes,holding_t_tape):
     # We just have to get a certain percentage of the states
     # Create array of unique elements
     sampling_time = 1/sampling_rate
-    if len(state_tapes) != len(holding_t_tapes):
+    if len(state_tapes) != len(holding_t_tape):
         print("Sizes of tapes are not equivalent. Please make sure they \
                 correspond to each other.")
         return
     # Need to find final time
     # Final Exponential Time only tells us  about
-    transition_times = np.cumsum(holding_t_tapes)
-    starting_times = np.copy(transition_times) - holding_t_tapes
-    ending_times = starting_times+holding_t_tapes
-    #  ending_time = starting_times[-1]+transition_times[-1]
+    transition_times = np.cumsum(holding_t_tape)
+    starting_times = np.copy(transition_times) - holding_t_tape
 
     # Get our sample tap
     states = []
     state_tapo = np.asarray(state_tapes)
-    for i,time in enumerate(np.arange(0,ending_times[-1],sampling_time)):
-        indices  = (time >= starting_times) & (time < ending_times)
-        state_fallen_into = state_tapo[indices]
+
+
+    for i,time in enumerate(np.arange(0,transition_times[-1],sampling_time)):
+        # Get Index of State
+        state_index  = (time >= starting_times) & (time < transition_times)
+        state_fallen_into = state_tapo[state_index]
         assert len(state_fallen_into) == 1
         #  assert (len(state_fallen_into) != 1)
         states.append(state_fallen_into[0])
-         
 
     return np.asarray(states)
     

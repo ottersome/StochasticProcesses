@@ -28,6 +28,8 @@ def log_matrix_approx(state_tape, holdTimes_tape,args):
             axs[0].text(j,i,"%2.2f " % p_hat[i,j],ha="center",va="center",color="w",fontsize=font_size)
     axs[0].set_title(r'Transition matrix for $\Delta t=1/$ {}'.format(args.samprate))
 
+    # Sanity Check
+    print("Determinant of trhe Transtition Matrix : {}".format(np.linalg.det(p_hat)))
     # Compute the Solution
     Qdt = power_series_log(p_hat, 64)
     Q = Qdt / (samp_time)
@@ -43,6 +45,23 @@ def log_matrix_approx(state_tape, holdTimes_tape,args):
         args.samprate,args.lam,args.mu, format='eps',dpi=200))
     plt.show()
     print("Calculated. Displaying...")
+
+def determinant_and_sampling(state_tape, holdTimes_tape,args, doublings=6, initial_rate=1):
+
+    fig,axs = plt.subplots(1,1)
+    fig.tight_layout()
+    fig.set_size_inches(10,10)
+
+    dets = []
+    for i in range(doublings+1):
+        rate = initial_rate**i
+        sampled_tape = simple_sample(rate, state_tape, holdTimes_tape)
+        p_hat = state_transitions(np.full_like(sampled_tape, samp_time), sampled_tape)
+        dets.append(np.linalg.det(p_hat))
+
+    plt.plot(range(len(dets)),dets)
+    plt.show()
+
 
 
 def show_event_driven_mle(state_tape,holdTimes_tape,args):
@@ -127,14 +146,14 @@ if __name__ == '__main__':
     rates = {"lambda": args.lam,"mu":args.mu} 
     print(f"Working with parameters mu:{args.mu} lambda:{args.lam}")
 
-    roe = RaceOfExponentials(args.length,rates,state_limit=args.state_limit)
-    holdTimes_tape, state_tape = roe.generate_history(args.init_state)
+    # roe = RaceOfExponentials(args.length,rates,state_limit=args.state_limit)
+    # holdTimes_tape, state_tape = roe.generate_history(args.init_state)
     
     #  tbd = TrueBirthDeath(args.length,rates)
     #  holdTimes_tape, state_tape = tbd.generate_history(args.init_state)
 
-    # roe = EmbeddedMarkC_BD(args.length,rates, state_limit=args.state_limit)
-    # holdTimes_tape, state_tape = roe.generate_history(args.init_state)
+    roe = EmbeddedMarkC_BD(args.length,rates, state_limit=args.state_limit)
+    holdTimes_tape, state_tape = roe.generate_history(args.init_state)
 
     # For Sanity Check Purposes
     #  if args.show_cont_tmatx:  show_trans_matrx(holdTimes_tape, state_tape)
