@@ -87,11 +87,24 @@ class EmbeddedMarkC_BD(SPManager):
             if states[-1]==0 and birth_or_death[i] == -1: 
                 # In case of being at state 0 
                 # we only have the probability of moving right
-                new_time = np.random.exponential(scale=(1/self.a_rate))
+                temp1 = np.random.exponential(scale=(1/self.a_rate))
+                temp2 = np.random.exponential(scale=(1/self.s_rate))
+                while temp1 < temp2:
+                    temp1 = np.random.exponential(scale=(1/self.a_rate))
+                    temp2 = np.random.exponential(scale=(1/self.s_rate))
+                new_time = temp1
                 self.holding_times[i] = new_time
+                # self.holding_times[i] = np.random.exponential(scale=(1/self.a_rate))
                 birth_or_death[i] = 1
             if states[-1]==self.state_limit and birth_or_death[i] == 1: 
-                self.holding_times[i] = np.random.exponential(scale=(1/self.s_rate))
+                temp1 = np.random.exponential(scale=(1/self.a_rate))
+                temp2 = np.random.exponential(scale=(1/self.s_rate))
+                while temp2 < temp1:
+                    temp1 = np.random.exponential(scale=(1/self.a_rate))
+                    temp2 = np.random.exponential(scale=(1/self.s_rate))
+                new_time = temp2
+                self.holding_times[i] = new_time
+                # self.holding_times[i] = np.random.exponential(scale=(1/self.s_rate))
                 birth_or_death[i] = -1
 
             states.append(states[-1] + birth_or_death[i])
@@ -189,10 +202,24 @@ class RaceOfExponentials(SPManager):
             cur_state = states[-1]
             change = bd[i]
             if cur_state == 0 and change == -1:# We only take birth 
+                # temp1 = np.random.exponential(scale=(1/self.a_rate))
+                # temp2 = np.random.exponential(scale=(1/self.s_rate))
+                # while temp2 < temp1:
+                #     temp1 = np.random.exponential(scale=(1/self.a_rate))
+                #     temp2 = np.random.exponential(scale=(1/self.s_rate))
+                # new_time = temp1
+                # holding_times[i] = new_time
                 holding_times[i] = race[i,1]
                 change = 1
             if cur_state == self.state_limit and change==1:
-                hodling_times = race[i,0]
+                # temp1 = np.random.exponential(scale=(1/self.a_rate))
+                # temp2 = np.random.exponential(scale=(1/self.s_rate))
+                # while temp1 < temp2:
+                #     temp1 = np.random.exponential(scale=(1/self.a_rate))
+                #     temp2 = np.random.exponential(scale=(1/self.s_rate))
+                # new_time = temp2
+                # holding_times[i] = new_time
+                holding_times[i] = race[i,0]
                 change = -1
             states.append(cur_state + change)
 

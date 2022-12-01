@@ -133,8 +133,8 @@ if __name__ == '__main__':
     #  tbd = TrueBirthDeath(args.length,rates)
     #  holdTimes_tape, state_tape = tbd.generate_history(args.init_state)
 
-    #  roe = EmbeddedMarkC_BD(args.length,rates, state_limit=args.state_limit)
-    #  holdTimes_tape, state_tape = roe.generate_history(args.init_state)
+    # roe = EmbeddedMarkC_BD(args.length,rates, state_limit=args.state_limit)
+    # holdTimes_tape, state_tape = roe.generate_history(args.init_state)
 
     # For Sanity Check Purposes
     #  if args.show_cont_tmatx:  show_trans_matrx(holdTimes_tape, state_tape)
