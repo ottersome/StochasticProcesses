@@ -23,7 +23,7 @@ class AbsStatisticGenerator(ABC):
 def trans_matrix(times,states):
     return state_transitions(times, states)
 
-# Im afraind I will end up abusing the amount of tapes. Lets see
+# I changed the funciton to not use times as these matches the MLE.
 def state_transitions(times, states):
     # Unique_Elements might seem redundant but maybe we wont always have a state space that starts at 0
     unique_elements,inverse, counts, = np.unique(

@@ -2,6 +2,7 @@ import numpy as np
 import sys
 import matplotlib.pyplot as plt
 import argparse
+import scipy
 from sp_sims.simulators.stochasticprocesses import *
 from sp_sims.statistics.statistics import *
 from sp_sims.estimators.algos import *
@@ -29,9 +30,10 @@ def log_matrix_approx(state_tape, holdTimes_tape,args):
     axs[0].set_title(r'Transition matrix for $\Delta t=1/$ {}'.format(args.samprate))
 
     # Sanity Check
-    print("Determinant of trhe Transtition Matrix : {}".format(np.linalg.det(p_hat)))
+    print("Determinant of the transition matrix : {}".format(np.linalg.det(p_hat)))
     # Compute the Solution
-    Qdt = power_series_log(p_hat, 64)
+    Qdt = power_series_log(p_hat, 3)
+    #  Qdt = scipy.linalg.logm(p_hat)
     Q = Qdt / (samp_time)
 
     # Show the Gneeratort matrix recovered from it
@@ -39,6 +41,7 @@ def log_matrix_approx(state_tape, holdTimes_tape,args):
     for i in range(Q.shape[0]):
         for j in range(Q.shape[1]):
             axs[1].text(j,i,"%2.2f " % Q[i,j],ha="center",va="center",color="w",fontsize=font_size)
+
     axs[1].set_title(
             r"Estimated Generator Matrix through samples at $\Delta t = ${}. $\mu$:{} $\lambda$:{} ".format(args.samprate,args.mu,args.lam))
     plt.savefig('Images/MLE_sample_log_dt{}_lam{},_mu{}.png'.format(
@@ -46,22 +49,55 @@ def log_matrix_approx(state_tape, holdTimes_tape,args):
     plt.show()
     print("Calculated. Displaying...")
 
-def determinant_and_sampling(state_tape, holdTimes_tape,args, doublings=6, initial_rate=1):
+def determinant_and_sampling(state_tape, holdTimes_tape,args, doublings=8, initial_rate=1):
 
     fig,axs = plt.subplots(1,1)
     fig.tight_layout()
     fig.set_size_inches(10,10)
+    samp_time = 1/initial_rate
 
     dets = []
     for i in range(doublings+1):
-        rate = initial_rate**i
+        rate = initial_rate*2**i
+        print(f'Using rate {rate}')
         sampled_tape = simple_sample(rate, state_tape, holdTimes_tape)
-        p_hat = state_transitions(np.full_like(sampled_tape, samp_time), sampled_tape)
+        p_hat = state_transitions(np.full_like(sampled_tape, 1/rate), sampled_tape)
         dets.append(np.linalg.det(p_hat))
 
-    plt.plot(range(len(dets)),dets)
+    axs.plot([initial_rate*2**i for i in range(doublings+1)],dets)
+    axs.set_xlabel("Sampling Rate(Unit Time)")
+    axs.set_ylabel("Determinant of Sampled Transition Matrix")
+    plt.title("Determinant vs the amount of Sampling")
     plt.show()
 
+# Maximum of eigenvalue function
+def max_eigenf_value(state_tape, holdTimes_tape,args, doublings=8, initial_rate=1):
+
+    fig,axs = plt.subplots(1,1)
+    fig.tight_layout()
+    fig.set_size_inches(10,10)
+    samp_time = 1/initial_rate
+
+
+    max_eig_vals = []
+    for i in range(doublings+1):
+        rate = initial_rate*2**i
+        print(f'Using rate {rate}')
+        sampled_tape = simple_sample(rate, state_tape, holdTimes_tape)
+        p_hat = state_transitions(np.full_like(sampled_tape, 1/rate), sampled_tape)
+        eigvals,_ = np.linalg.eig(p_hat)
+        print("Eigen Vals for Matrix at rate {} are \n\t{}".format(rate,eigvals))
+        a = np.real(eigvals)
+        b = np.imag(eigvals)
+        pre_s = (a-1)**2  + b**2
+        S = np.max(pre_s)
+        max_eig_vals.append(S)
+
+    axs.plot([initial_rate*2**i for i in range(doublings+1)],max_eig_vals)
+    axs.set_xlabel("Sampling Time")
+    axs.set_ylabel(r'$s=(a-1)^2 + b^2$')
+    plt.title("S vs Sampling Rate")
+    plt.show()
 
 
 def show_event_driven_mle(state_tape,holdTimes_tape,args):
@@ -158,6 +194,11 @@ if __name__ == '__main__':
     # For Sanity Check Purposes
     #  if args.show_cont_tmatx:  show_trans_matrx(holdTimes_tape, state_tape)
     if args.show_cont_tmatx and args.state_limit > 0:
+        # In case you want to check the determinant
+        #  determinant_and_sampling(state_tape, holdTimes_tape, args,initial_rate=args.samprate)
+        max_eigenf_value(state_tape, holdTimes_tape, args, initial_rate=args.samprate)
+
+        
         tgm = generate_true_gmatrix({"lam":args.lam, "mu":args.mu}, args.state_limit)
         osm = one_step_matrx(tgm)
         osm = one_step_matrx(tgm)
