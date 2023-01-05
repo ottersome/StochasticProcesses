@@ -62,6 +62,11 @@ def argparser():
                         default=-1,
                         type=int,
                         help='Make the State Space Limited in Positive Integer Space by Providing Max Value.')
+    parser.add_argument('--detection_guesses',
+                        dest='detection_guesses',
+                        default=-100,
+                        type=int,
+                        help='How many guesses we will take for detection')
     parser.add_argument('--init_state',
                         dest='init_state',
                         type=int,

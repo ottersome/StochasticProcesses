@@ -178,7 +178,7 @@ class RaceOfExponentials(SPManager):
 
     def __init__(self, length,rates, state_limit=-1):
         self.length = length
-        self.a_rate = rates['lambda']
+        self.a_rate = rates['lam']
         self.s_rate = rates['mu']
         self.state_limit = state_limit
 

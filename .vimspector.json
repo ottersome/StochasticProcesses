@@ -7,27 +7,24 @@
         "name": "Runny: Launch",
         "type": "python",
         "request": "launch",
-        "cwd": "~/Projects/StochasticProcesses/",
-        "python": "~/miniconda3/envs/py38/bin/python",
+        "cwd": "~/Research/StochasticProcesses/",
+        "python": "~/miniforge3/envs/rs39/bin/python",
         "stopOnEntry": true,
         "console": "externalTerminal",
         "debugOptions": [],
-//        "args" : ["1000","1","1000"],
-        //"args" : ["100","1.5","0.5","100","0"],
-        "args" : ["--length","1000",
+        "args" : ["--length","100",
             "--mu","1.5",
-            "--lambda","1.2",
-            "--samprate","0.25",
+            "--lambda","1.0",
+            "--samprate","0.1",
             "--init_state","0",
+            "--detection_guesses","100",
             "--show_sanity_check","True",
-            "--method","log_mat",
+            //"--method","log_mat",
             "--state_limit","10"
             ],
-        //"program": "~/Projects/StochasticProcesses/main.py"
-        //"program": "~/Projects/StochasticProcesses/mappois.py"
-        //"program": "~/Projects/StochasticProcesses/viterbi.py"
-        //"program": "~/Projects/StochasticProcesses/deltat.py"
-        "program": "~/Projects/StochasticProcesses/approximations.py"
+        //"program": "~/Projects/StochasticProcesses/approximations.py"
+        //"program": "~/Projects/StochasticProcesses/eigenvaluaes.py"
+        "program": "~/Research/StochasticProcesses/detection.py"
       }
     }
   }
