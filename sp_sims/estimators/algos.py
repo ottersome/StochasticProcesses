@@ -36,22 +36,22 @@ def power_series_log(mat,power):
 
     return final_mat
 
-def power_series_log(mat,power):
-    assert mat.shape[0] == mat.shape[1]
+# def power_series_log(mat,power):
+#     assert mat.shape[0] == mat.shape[1]
 
-    # Test for convergence
-    print('||B-I||={}'.format(np.linalg.norm(mat-np.eye(mat.shape[0]),ord='fro')))
-    final_mat = np.zeros_like(mat)
-    for k in range(1,power):
-        cur_mat = (-1)**(k+1) * (1/k) *(mat-np.eye(mat.shape[0]))
-        final_mat += cur_mat
+#     # Test for convergence
+#     print('||B-I||={}'.format(np.linalg.norm(mat-np.eye(mat.shape[0]),ord='fro')))
+#     final_mat = np.zeros_like(mat)
+#     for k in range(1,power):
+#         cur_mat = (-1)**(k+1) * (1/k) *(mat-np.eye(mat.shape[0]))
+#         final_mat += cur_mat
 
-    return final_mat
+#     return final_mat
 
 def viterbi(obs_tape,inital_hs_probs, trans_probs,emission_probs):
     
     # Two Hidden States 
-    tape_length = len(tape_path)
+    tape_length = len(obs_tape)
     obs = obs_tape
 
     # Emission Probs must be KXN where K is num of hidden states and N is num of emitted states

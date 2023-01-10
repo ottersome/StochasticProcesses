@@ -7,13 +7,16 @@ from  ..statistics.statistics import trans_matrix
 def show_sanity_matrxs(matrices, titles):
     # Show Transition Matrices
     fig, ax = plt.subplots(1,len(matrices))
+    fig.subplots_adjust(top=1.30)
+    fig.suptitle(titles[-1])
     labels = ['True','Empirical']
     for m,data in enumerate(matrices):
+        ax[m].title.set_text(titles[m])
         if hasattr(data, "shape") and len(data.shape) == 2:
             ax[m].imshow(data)
             for i in range(data.shape[0]):
                 for j in range(data.shape[1]):
-                    ax[m].text(j,i,"%.2f " % data[i,j],ha="center",va="center",color="w",fontsize=4)
+                    ax[m].text(j,i,"%.2f " % data[i,j],ha="center",va="center",color="w",fontsize=6)
         else:# Assume its 1d data
             for i,bar in enumerate(data):
                 ax[m].bar(np.arange(0,len(bar),dtype=float)+(0.40*i),bar,0.40,label=labels[i])

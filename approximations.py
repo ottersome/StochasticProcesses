@@ -2,6 +2,7 @@ import numpy as np
 import sys
 import matplotlib.pyplot as plt
 import argparse
+import pickle
 from sp_sims.simulators.stochasticprocesses import *
 from sp_sims.statistics.statistics import *
 from sp_sims.estimators.algos import *
@@ -18,7 +19,8 @@ def log_matrix_approx(state_tape, holdTimes_tape,args):
 
     # Get a tape of samples at a particular rate
     print(r"Calculating the $\Delta t = ${}-Sampeld Transition Matrix MLE...".format(args.samprate))
-    sampled_tape = simple_sample(args.samprate, state_tape, holdTimes_tape)
+    #sampled_tape = simple_sample(args.samprate, state_tape, holdTimes_tape)
+    sampled_tape = quick_sample(args.samprate, state_tape, holdTimes_tape)
     p_hat = state_transitions(np.full_like(sampled_tape, samp_time), sampled_tape)
 
     # Show the p-hat matrix
@@ -80,8 +82,10 @@ def GeneratorFromTransition(holdTimes_tape, state_tape,samp_rate,args):
     alt_samp_time = 1/alt_rate
     
     # Sample the Tapes
-    sampled_tape_ori = simple_sample(samp_rate, state_tape, holdTimes_tape)
-    sampled_tape_alt = simple_sample(alt_rate, state_tape, holdTimes_tape)
+#    sampled_tape_ori = simple_sample(samp_rate, state_tape, holdTimes_tape)
+#    sampled_tape_alt = simple_sample(alt_rate, state_tape, holdTimes_tape)
+    sampled_tape_ori = quick_sample(samp_rate, state_tape, holdTimes_tape)
+    sampled_tape_alt = quick_sample(alt_rate, state_tape, holdTimes_tape)
    
     # Sampled Transition Probabilities
     print(f"Calculating Transition matrix at {samp_rate}")
@@ -118,6 +122,12 @@ def GeneratorFromTransition(holdTimes_tape, state_tape,samp_rate,args):
         ))
     plt.show()
 
+def LogMatrixExpand(P, NoOfTerms):
+    Q = np.zeros(P.shape)
+    for i in range(NoOfTerms):
+        Q = Q + (np.linalg.matrix_power((P - np.identity(P.shape[0])), i+1) * ((-1)**(i))/(i+1))
+    return Q 
+
 
 if __name__ == '__main__':
     # Go through arguments
@@ -140,11 +150,12 @@ if __name__ == '__main__':
     #  if args.show_cont_tmatx:  show_trans_matrx(holdTimes_tape, state_tape)
     if args.show_cont_tmatx and args.state_limit > 0:
         tgm = generate_true_gmatrix({"lam":args.lam, "mu":args.mu}, args.state_limit)
-        osm = one_step_matrx(tgm)
+        #osm = one_step_matrx(tgm)
         osm = one_step_matrx(tgm)
         stat_dist = get_stat_dist(tgm)
         #  stat_dist = stat_dist.flatten()
-        sampled_tape = simple_sample(args.samprate,state_tape,holdTimes_tape)
+        #sampled_tape = simple_sample(args.samprate,state_tape,holdTimes_tape)
+        sampled_tape = quick_sample(args.samprate,state_tape,holdTimes_tape)
         emp_state, x_axis = emp_steady_state_distribution(sampled_tape)
 
         show_sanity_matrxs(
@@ -155,9 +166,95 @@ if __name__ == '__main__':
 
     print("Method being used : ",args.method)
 
-    if args.method == 'event_driven_mle':
-        show_event_driven_mle(state_tape,holdTimes_tape,args)
-    elif args.method == 'log_mat':
-        log_matrix_approx(state_tape, holdTimes_tape, args)
-    elif args.method == 'fixed_delta_t':
-        GeneratorFromTransition(holdTimes_tape, state_tape, args.samprate,args)
+    # if args.method == 'event_driven_mle':
+    #     show_event_driven_mle(state_tape,holdTimes_tape,args)
+    # elif args.method == 'log_mat':
+    #     log_matrix_approx(state_tape, holdTimes_tape, args)
+    # elif args.method == 'fixed_delta_t':
+    #     GeneratorFromTransition(holdTimes_tape, state_tape, args.samprate,args)
+    
+    # This portion is added by Ernest on 30 December 2022
+    
+    # From the state_tape, we can calculate the event-driven transition probability.
+    P_EvDriv = np.zeros((args.state_limit+1,args.state_limit+1))
+    for i in range(len(state_tape)-1):
+        P_EvDriv[state_tape[i], state_tape[i+1]] += 1
+    StateHist = np.histogram(state_tape[0:-1], np.arange(args.state_limit+2))
+    NormFac = StateHist[0]
+    for i in range(args.state_limit + 1):
+        for j in range(args.state_limit+1):
+            P_EvDriv[i,j] = P_EvDriv[i,j]/NormFac[i]
+            
+    # From the sampled_tape, we can calculate the sampled transition probability matrix
+    P_Samp = np.zeros((args.state_limit+1,args.state_limit+1))
+    for i in range(len(sampled_tape)-1):
+        P_Samp[sampled_tape[i], sampled_tape[i+1]] += 1
+    StateHist = np.histogram(sampled_tape[0:-1], np.arange(args.state_limit+2))
+    NormFac = StateHist[0]
+    for i in range(args.state_limit + 1):
+        for j in range(args.state_limit+1):
+            P_Samp[i,j] = P_Samp[i,j]/NormFac[i]
+            
+    determinants = []
+    samprates = []
+    sampperiods = []
+    ProbMats = []
+    GenMats = []
+    absDif = []
+    
+    for interv in range(500):
+        P_Samp = np.zeros((args.state_limit+1,args.state_limit+1))
+        procSampled_tape = sampled_tape[0::(interv+1)]
+        for i in range(len(procSampled_tape)-1):
+            P_Samp[procSampled_tape[i], procSampled_tape[i+1]] += 1
+        StateHist = np.histogram(procSampled_tape[0:-1], np.arange(args.state_limit+2))
+        NormFac = StateHist[0]
+        for i in range(args.state_limit + 1):
+            for j in range(args.state_limit+1):
+                P_Samp[i,j] = P_Samp[i,j]/NormFac[i]
+        tt = LogMatrixExpand(P_Samp, 500)
+        procSampRate = 1/((interv+1)*(1/args.samprate))        
+        tt = tt * procSampRate
+        samprates.append(procSampRate)
+        sampperiods.append(1/procSampRate)
+        determinants.append(np.linalg.det(P_Samp))
+        ProbMats.append(P_Samp.copy())
+        GenMats.append(tt.copy())
+        absDif.append(np.sum(np.absolute(tt - tgm)))
+        if interv == 0 or (interv+1) % 50 == 0:
+            print('Processing index ' + str(interv) + ' out of 500')
+            show_sanity_matrxs([P_Samp, tt, tgm], ['Samp Trans Mat', 'Samp Gen Mat', 'True Gen Mat', 'Sampling period = '+str(1/procSampRate)])
+    
+    plt.plot(sampperiods, absDif)
+    plt.xlabel('Sampling Period')
+    plt.ylabel('L1_norm(Q_sampled - Q_theo)')
+    
+    plt.plot(sampperiods, determinants)
+    plt.xlabel('Sampling Period')
+    plt.ylabel('det(P_sampled)')
+    
+    with open('results.pickle', 'wb') as f:
+        pickle.dump([determinants, samprates, ProbMats, GenMats, absDif], f)
+        
+    MinDiag = []
+    MinEig = []
+    MinEigImag = []
+    
+    for i in range(500):
+        MinDiag.append(np.min(np.diag(ProbMats[i])))
+        MinEig.append(np.real(np.min(np.linalg.eigvals(ProbMats[i]))))
+        MinEigImag.append(np.imag(np.min(np.linalg.eigvals(ProbMats[i]))))
+    
+    
+    plt.plot(sampperiods, MinDiag)
+    plt.xlabel('Sampling Period')
+    plt.ylabel('Minimum holding probability: min(diag(P))')
+    
+    plt.plot(sampperiods, MinEig)
+    plt.xlabel('Sampling Period')
+    plt.ylabel('Minimum eigenvalue: Re{min(eigval(P))}')
+    
+    plt.plot(sampperiods, MinEigImag)
+    plt.xlabel('Sampling Period')
+    plt.ylabel('Minimum eigenvalue: Im{min(eigval(P))}')
+    
