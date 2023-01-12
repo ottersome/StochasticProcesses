@@ -7,8 +7,10 @@
         "name": "Runny: Launch",
         "type": "python",
         "request": "launch",
-        "cwd": "~/Research/StochasticProcesses/",
-        "python": "~/miniforge3/envs/rs39/bin/python",
+        //"cwd": "~/Research/StochasticProcesses/",
+        "cwd": "~/Projects/StochasticProcesses/",
+        //"python": "~/miniforge3/envs/rs39/bin/python",
+        "python": "~/miniconda3/envs/datascience/bin/python",
         "stopOnEntry": true,
         "console": "externalTerminal",
         "debugOptions": [],
@@ -22,9 +24,9 @@
             //"--method","log_mat",
             "--state_limit","10"
             ],
+        "program": "~/Projects/StochasticProcesses/detection.py"
         //"program": "~/Projects/StochasticProcesses/approximations.py"
-        //"program": "~/Projects/StochasticProcesses/eigenvaluaes.py"
-        "program": "~/Research/StochasticProcesses/detection.py"
+        //"program": "~/Research/StochasticProcesses/detection.py"
       }
     }
   }

@@ -14,8 +14,11 @@ def get_true_trans_probs(Q):
     #P = power_series_exp(delta_t*Q)
     P = expm(Q)
     # Get the Norm 
-    print(np.linalg.norm(Q,ord='fro'))
+    print("Norm for given Q Matrix ", their_l1_norm(Q))
     return P
+
+def their_l1_norm(M):
+    return np.sum(np.sum(np.abs(M),1),0)
 
 
 def print_mat_text(mat, axs):
@@ -32,7 +35,7 @@ def take_a_guess(tape, p0, p1):
         from_state = tape[i]
         to_state = tape[i+1]
         num  *= p0[from_state,to_state]
-        denum *= p1[from_state,to_state]
+        denum *= p1[from_state,to_state] 
 
     return 0 if num > denum else 1
 
@@ -60,14 +63,51 @@ def test_estimator(rates,args):
 
     plt.show()
 
+def complex_matrix():
+    generator_matrix = np.array([[-1, 0.5, 0.3, 0.2, 0],
+        [0.4, -1, 0, 0.5, 0.1],
+        [0.3, 0, 0.2, -1, 0],
+        [0.2, 0.5, 0, 0, -1],
+        [0, 0.1, 0, 0.9, 0]])
+
+    fig,axs = plt.subplots(1,2)
+    fig.set_size_inches(10,10)
+    fig.tight_layout()
+        
+    print_mat_text(generator_matrix, axs[0])
+    axs[0].set_title('Given Generator Matrix')
+
+    trans_mat = get_true_trans_probs(Q=generator_matrix)
+    print_mat_text(trans_mat, axs[1])
+    axs[1].set_title('Resulting Transition Matrix')
+
+    # Then we have eigenvalues
+    print("The resulting Eigenvalues for Q: ",np.linalg.eigvals(generator_matrix))
+    print("The resulting Eigenvalues for P: ",np.linalg.eigvals(trans_mat))
+    plt.show()
+    exit(-1)
+
+
+
 
 if __name__ == '__main__':
     # Go through arguments
     args = argparser()
+    complex_matrix()
+
+    # Load the Pregenerated Generator Matrix
+    
+    # Create the Theoretical Probability Transition Matrices
+    
+    # Display Both for Sanity Check
+    
+    # Simulate the Process
+    
+    # Compare Empirical Transition Matrix to the Theoretical one.
+    
+    # Recover Possible Empirical Generator Matrices
 
     # Created Tapes
-    rates1 = {"lam": 1/16,"mu":1/14} 
-    rates2 = {"lam": 1/16,"mu":1/10} 
     print("Null Rates ", rates1)
     print("Alternative Rates ", rates2)
 
@@ -76,6 +116,7 @@ if __name__ == '__main__':
 
     
     # Sanity Check
+    
     # test_estimator(rates1,args)
     
     # We dont even need that. We just neeed a Q matrix ||Q|| < ln 2
@@ -87,8 +128,7 @@ if __name__ == '__main__':
 
     # We will create multiple different samples here
     hit_rates = []
-    #  samp_rates = [args.samprate *2 ** j for j in range(10)]
-    samp_rates = np.linspace(0.01,3,100)
+    samp_rates = [args.samprate *2 ** j for j in range(10)]
 
     tgm0 = generate_true_gmatrix(rates[0], args.state_limit)
     tgm1 = generate_true_gmatrix(rates[1], args.state_limit)
@@ -103,6 +143,8 @@ if __name__ == '__main__':
 
         true_p0 = get_true_trans_probs(Q=tgm0*(1/cur_samp_rate))
         true_p1 = get_true_trans_probs(Q=tgm1*(1/cur_samp_rate))
+        print("These are the eigenvalues for current matrix 0 {}".format(np.linalg.eigvals(true_p0)))
+        print("These are the eigenvalues for current matrix 1 {}".format(np.linalg.eigvals(true_p1)))
         
         #  fig, axs =  plt.subplots(1,2)
         #  fig.tight_layout()
@@ -110,7 +152,17 @@ if __name__ == '__main__':
         #  print_mat_text(true_p0, axs[0])
         #  print_mat_text(true_p1, axs[1])
         #  plt.show()
-        
+
+        # Saving a probability matrix that matches the theorems
+        #  First, check if the matrix at hand has different eigenvalues
+        #  should_save = input("Would you like to use this matrix? : ")
+
+        #  if should_save == "1":
+        #      np.save('matrices/prob1_mat_l{}_m{}_r{}.npy'.format(rates1['lam'],rates1['mu'],cur_samp_rate), true_p0)
+        #  elif should_save  == "2":
+        #      np.save('matrices/prob2_mat_l{}_m{}_r{}.npy'.format(rates2['lam'],rates2['mu'],cur_samp_rate), true_p1)
+
+
         # For every sample rate we will generate sample path and guess from it
         for i in range(args.detection_guesses):
             # Generate a path from either q0 or 1
