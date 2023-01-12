@@ -27,5 +27,3 @@ def one_step_matrx(Q):
 def get_stat_dist(Q,eigen_method =False):
     pi = null_space(np.transpose(Q)).flatten()
     return  pi/np.sum(pi)
-
-
