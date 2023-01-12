@@ -94,7 +94,6 @@ class EmbeddedMarkC_BD(SPManager):
                     temp2 = np.random.exponential(scale=(1/self.s_rate))
                 new_time = temp1
                 self.holding_times[i] = new_time
-                # self.holding_times[i] = np.random.exponential(scale=(1/self.a_rate))
                 birth_or_death[i] = 1
             if states[-1]==self.state_limit and birth_or_death[i] == 1: 
                 temp2 = np.random.exponential(scale=(1/self.s_rate))
@@ -104,7 +103,6 @@ class EmbeddedMarkC_BD(SPManager):
                     temp2 = np.random.exponential(scale=(1/self.s_rate))
                 new_time = temp2
                 self.holding_times[i] = new_time
-                # self.holding_times[i] = np.random.exponential(scale=(1/self.s_rate))
                 birth_or_death[i] = -1
 
             states.append(states[-1] + birth_or_death[i])
