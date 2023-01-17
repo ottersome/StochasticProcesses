@@ -28,9 +28,9 @@ class SPManager(ABC):
         pass
     # Run n Processesin parallel to accumuluate 
     # experience faster
-    @abstractmethod
-    def simulate_n_processes(self):
-        pass
+    #  @abstractmethod
+    #  def simulate_n_processes(self):
+    #      pass
 
 
 

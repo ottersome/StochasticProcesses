@@ -66,8 +66,8 @@ if __name__ == '__main__':
     args = argparser()
 
     # Created Tapes
-    rates1 = {"lam": 1/16,"mu":1/14} 
-    rates2 = {"lam": 1/16,"mu":1/10} 
+    rates1 = {"lam": 0.4,"mu":1.2} 
+    rates2 = {"lam": 0.8,"mu":1.4} 
     print("Null Rates ", rates1)
     print("Alternative Rates ", rates2)
 
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     # We will create multiple different samples here
     hit_rates = []
     #  samp_rates = [args.samprate *2 ** j for j in range(10)]
-    samp_rates = np.linspace(0.01,3,100)
+    samp_rates = np.linspace(0.01,3,1000)
 
     tgm0 = generate_true_gmatrix(rates[0], args.state_limit)
     tgm1 = generate_true_gmatrix(rates[1], args.state_limit)
@@ -104,12 +104,6 @@ if __name__ == '__main__':
         true_p0 = get_true_trans_probs(Q=tgm0*(1/cur_samp_rate))
         true_p1 = get_true_trans_probs(Q=tgm1*(1/cur_samp_rate))
         
-        #  fig, axs =  plt.subplots(1,2)
-        #  fig.tight_layout()
-        #  fig.set_size_inches(10,10)
-        #  print_mat_text(true_p0, axs[0])
-        #  print_mat_text(true_p1, axs[1])
-        #  plt.show()
         
         # For every sample rate we will generate sample path and guess from it
         for i in range(args.detection_guesses):
@@ -124,5 +118,8 @@ if __name__ == '__main__':
         print("For Sampling Rate {} we have ratio of right guesses: {}/{}".format(cur_samp_rate,num_hits,args.detection_guesses))
 
     plt.plot(samp_rates,hit_rates)
+    for i,rate in enumerate(rates):
+        plt.axvline(rate['lam'],label='$\lambda_'+str(i)+'$',color='g')
+        plt.axvline(rate['mu'],label='$\mu_'+str(i)+'$',color='g')
     plt.title('Number of right guesses vs sampling rate')
     plt.show()

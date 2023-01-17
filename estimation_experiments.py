@@ -63,37 +63,11 @@ def test_estimator(rates,args):
 
     plt.show()
 
-def complex_matrix():
-    generator_matrix = np.array([[-1, 0.5, 0.3, 0.2, 0],
-        [0.4, -1, 0, 0.5, 0.1],
-        [0.3, 0, 0.2, -1, 0],
-        [0.2, 0.5, 0, 0, -1],
-        [0, 0.1, 0, 0.9, 0]])
-
-    fig,axs = plt.subplots(1,2)
-    fig.set_size_inches(10,10)
-    fig.tight_layout()
-        
-    print_mat_text(generator_matrix, axs[0])
-    axs[0].set_title('Given Generator Matrix')
-
-    trans_mat = get_true_trans_probs(Q=generator_matrix)
-    print_mat_text(trans_mat, axs[1])
-    axs[1].set_title('Resulting Transition Matrix')
-
-    # Then we have eigenvalues
-    print("The resulting Eigenvalues for Q: ",np.linalg.eigvals(generator_matrix))
-    print("The resulting Eigenvalues for P: ",np.linalg.eigvals(trans_mat))
-    plt.show()
-    exit(-1)
-
-
 
 
 if __name__ == '__main__':
     # Go through arguments
     args = argparser()
-    complex_matrix()
 
     # Created Tapes
     rates1 = {"lam": 1/16,"mu":1/12} 
@@ -117,52 +91,41 @@ if __name__ == '__main__':
 
     # We will create multiple different samples here
     hit_rates = []
-    samp_rates = [args.samprate *2 ** j for j in range(10)]
-
+    #samp_rates = [args.samprate *2 ** j for j in range(10)]
+    samp_rates = np.linspace(args.samprate*2**(-3),args.samprate*2**(3),100)
     tgm0 = generate_true_gmatrix(rates[0], args.state_limit)
     tgm1 = generate_true_gmatrix(rates[1], args.state_limit)
 
+    # Let us first generate a single processes. We will probability repeat this experiment over and over
 
-    for cur_samp_rate in samp_rates:
+    # With this rates 
+    roe0 = RaceOfExponentials(args.length,rates[0],state_limit=args.state_limit)
+    roe1 = RaceOfExponentials(args.length,rates[1],state_limit=args.state_limit)
+    holdTimes_tape0, state_tape0 = roe0.generate_history(args.init_state)
+    holdTimes_tape1, state_tape1 = roe1.generate_history(args.init_state)
+    true_values = np.random.choice(2,len(samp_rates))
+
+    for i,cur_samp_rate in enumerate(samp_rates):
         
         # Loop through multiple sampling rate
-        true_values = np.random.choice(2,args.detection_guesses)
-        print('Trying Sampling Rate: ',cur_samp_rate)
+        #  print('Trying Sampling Rate: ',cur_samp_rate)
         guess = []
 
+        print("With rate ",cur_samp_rate)
         true_p0 = get_true_trans_probs(Q=tgm0*(1/cur_samp_rate))
         true_p1 = get_true_trans_probs(Q=tgm1*(1/cur_samp_rate))
-        print("These are the eigenvalues for current matrix 0 {}".format(np.linalg.eigvals(true_p0)))
-        print("These are the eigenvalues for current matrix 1 {}".format(np.linalg.eigvals(true_p1)))
-        
-        #  fig, axs =  plt.subplots(1,2)
-        #  fig.tight_layout()
-        #  fig.set_size_inches(10,10)
-        #  print_mat_text(true_p0, axs[0])
-        #  print_mat_text(true_p1, axs[1])
-        #  plt.show()
 
-        # Saving a probability matrix that matches the theorems
-        #  First, check if the matrix at hand has different eigenvalues
-        #  should_save = input("Would you like to use this matrix? : ")
+        sampled_tape0 = simple_sample(args.samprate, state_tape0, holdTimes_tape0)
+        sampled_tape1 = simple_sample(args.samprate, state_tape1, holdTimes_tape1)
 
-        #  if should_save == "1":
-        #      np.save('matrices/prob1_mat_l{}_m{}_r{}.npy'.format(rates1['lam'],rates1['mu'],cur_samp_rate), true_p0)
-        #  elif should_save  == "2":
-        #      np.save('matrices/prob2_mat_l{}_m{}_r{}.npy'.format(rates2['lam'],rates2['mu'],cur_samp_rate), true_p1)
+        guessed_tape = sampled_tape0
+        if true_values[i] == 1 : guessed_tape = sampled_tape1
 
-
-        # For every sample rate we will generate sample path and guess from it
-        for i in range(args.detection_guesses):
-            # Generate a path from either q0 or 1
-            roe = RaceOfExponentials(args.length,rates[true_values[i]],state_limit=args.state_limit)
-            holdTimes_tape, state_tape = roe.generate_history(args.init_state)
-            sampled_tape = simple_sample(cur_samp_rate, state_tape, holdTimes_tape)
-            guess.append(take_a_guess(sampled_tape, true_p0, true_p1))
+        guess.append(take_a_guess(guessed_tape, true_p0,true_p1))
 
         num_hits = (true_values == guess).sum()
-        hit_rates.append(num_hits/args.detection_guesses)
-        print("For Sampling Rate {} we have ratio of right guesses: {}/{}".format(cur_samp_rate,num_hits,args.detection_guesses))
+        hit_rates.append(num_hits)
+        #  print("For Sampling Rate {} we have ratio of right guesses: {}/{}".format(cur_samp_rate,num_hits,args.detection_guesses))
 
     plt.plot(samp_rates,hit_rates)
     plt.title('Number of right guesses vs sampling rate')
