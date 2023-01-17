@@ -108,6 +108,7 @@ if __name__ == '__main__':
     for i,cur_samp_rate in enumerate(samp_rates):
         
         # Loop through multiple sampling rate
+        true_values = np.random.choice(2,args.detection_guesses)
         #  print('Trying Sampling Rate: ',cur_samp_rate)
         guess = []
 
@@ -124,7 +125,7 @@ if __name__ == '__main__':
         guess.append(take_a_guess(guessed_tape, true_p0,true_p1))
 
         num_hits = (true_values == guess).sum()
-        hit_rates.append(num_hits)
+        hit_rates.append(num_hits/args.detection_guesses)
         #  print("For Sampling Rate {} we have ratio of right guesses: {}/{}".format(cur_samp_rate,num_hits,args.detection_guesses))
 
     plt.plot(samp_rates,hit_rates)
