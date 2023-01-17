@@ -55,6 +55,48 @@ class ExponentialMinP(StochasticSimulator):
 # SP manager would manage different stochastic processs
 # Embedded Markov Chain Uses 
 #   * A single holding time e
+class GeneralEmbeddedMarkC(SPManager):
+
+    # Can we have an api for distributions?
+    # we will assume for now all variables are identically distributed.
+    def __init__(self, length,q_matrix):
+        print("We are setting up our embedded markov chian")
+        self.length = length
+        assert q_matrix.shape[0] == q_matrix.shape[1]
+
+        self.holding_rates = -1*(np.diag(q_matrix,0))
+        q_nodiag = q_matrix - np.multiply(np.diag(q_matrix,0), np.eye(q_matrix.shape[0]))
+
+        sum_mat = np.repeat(np.sum(q_nodiag, axis=1)[...,np.newaxis], q_nodiag.shape[1], axis=1)
+        final_sum_mat = sum_mat
+        
+        self.prob_matrix = q_nodiag/final_sum_mat
+
+        self.state_limit = q_nodiag.shape[0]
+    
+    def get_prob_mat(self):
+        return self.prob_matrix
+
+
+    # This case will be sequential since we need to first run the transition probabilities
+    def generate_history(self, initial_state):
+
+        # We can initialize this beforehand because the probability 
+        states = [initial_state]
+        list_of_states = range(self.state_limit)
+
+        states = [0]
+        holding_times = [np.random.exponential(scale=1/self.holding_rates[0])]
+
+        print("Generating Path of lenth ", self.length)
+        for i in range(self.length):
+            states.append(np.random.choice(list_of_states, p=self.prob_matrix[states[-1],:]))
+            holding_times.append(np.random.exponential(scale=1/self.holding_rates[states[-1]]))
+        
+        return (holding_times,states);
+
+    def simulate_n_processes(self):
+        pass
 class EmbeddedMarkC_BD(SPManager):
 
     # Can we have an api for distributions?

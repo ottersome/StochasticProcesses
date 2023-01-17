@@ -20,11 +20,11 @@ class AbsStatisticGenerator(ABC):
         pass
 
 # I regret the previous name so this is a quick bandaid 
-def trans_matrix(times,states):
-    return state_transitions(times, states)
+def trans_matrix(states):
+    return state_transitions(states)
 
 # I changed the funciton to not use times as these matches the MLE.
-def state_transitions(times, states):
+def state_transitions(states):
     # Unique_Elements might seem redundant but maybe we wont always have a state space that starts at 0
     unique_elements,inverse, counts, = np.unique(
             states,
@@ -122,7 +122,7 @@ def simple_sample(sampling_rate,state_tapes,holding_t_tape):
     transition_times = np.cumsum(holding_t_tape)
     starting_times = np.copy(transition_times) - holding_t_tape
 
-    # Get our sample tap
+    # Get Sample Tape
     states = []
     state_tapo = np.asarray(state_tapes)
     for i,time in enumerate(np.arange(0,transition_times[-1],sampling_time)):
@@ -150,7 +150,7 @@ def quick_sample(sampling_rate,state_tapes,holding_t_tapes):
     currStatIdx = 0
     
     while currT < transition_times[-1]:
-        print(str(currT) + ' out of ' + str(transition_times[-1]))
+        #  print(str(currT) + ' out of ' + str(transition_times[-1]))
         if currStatIdx >= len(transition_times):
             break
         idxIncrement = 1
@@ -162,15 +162,7 @@ def quick_sample(sampling_rate,state_tapes,holding_t_tapes):
         states = states + ([state_tapo[currStatIdx + idxIncrement - 1]] * NoOfReplica)
         currT = currT + (NoOfReplica * sampling_time)
         currStatIdx = currStatIdx + idxIncrement
-        print(currStatIdx)
+        #  print(currStatIdx)
 
     return np.asarray(states)
-
-
-
-
-
-
-
-
 

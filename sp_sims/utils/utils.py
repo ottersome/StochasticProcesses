@@ -76,7 +76,7 @@ def argparser():
                         default = 0,
                         help='Initial State in the real line.(Amnt of current events)')
     parser.add_argument('--show_sanity_check',
-                        dest='show_cont_tmatx',
+                        dest='show_sanity_check',
                         type=bool,
                         default = False,
                         help='Shows the transition matrix estimated from  continuous labels.')
@@ -85,4 +85,10 @@ def argparser():
                         choices=['event_driven_mle','log_mat','fixed_delta_t'],
                         default = 'fixed_sampled_rate',
                         help='Initial State in the real line.(Amnt of current events)')
+    parser.add_argument('--preload_gmat_loc',
+                        dest='preload_gmat_loc',
+                        type=str,
+                        default = './secondary_tools/complex_generator.npy',
+                        help='Initial State in the real line.(Amnt of current events)')
+
     return parser.parse_args()
