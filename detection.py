@@ -26,13 +26,15 @@ def print_mat_text(mat, axs):
 
 # This function will take a guess at which process generated the entire thing.
 def take_a_guess(tape, p0, p1):
-    num = 1
-    denum = 1
+    num = 0
+    denum = 0
     for i in range(len(tape)-1):
         from_state = tape[i]
         to_state = tape[i+1]
-        num  *= p0[from_state,to_state]
-        denum *= p1[from_state,to_state]
+        #  num  *= p0[from_state,to_state]
+        #  denum *= p1[from_state,to_state]
+        num += np.log(p0[from_state,to_state])
+        denum += np.log(p1[from_state,to_state])
 
     return 0 if num > denum else 1
 
@@ -67,7 +69,7 @@ if __name__ == '__main__':
 
     # Created Tapes
     rates1 = {"lam": 0.4,"mu":1.2} 
-    rates2 = {"lam": 0.8,"mu":1.4} 
+    rates2 = {"lam": 0.4,"mu":1.4} 
     print("Null Rates ", rates1)
     print("Alternative Rates ", rates2)
 
@@ -88,7 +90,7 @@ if __name__ == '__main__':
     # We will create multiple different samples here
     hit_rates = []
     #  samp_rates = [args.samprate *2 ** j for j in range(10)]
-    samp_rates = np.linspace(0.01,3,1000)
+    samp_rates = np.linspace(0.01,3,400)
 
     tgm0 = generate_true_gmatrix(rates[0], args.state_limit)
     tgm1 = generate_true_gmatrix(rates[1], args.state_limit)
