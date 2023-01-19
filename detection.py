@@ -26,6 +26,20 @@ def print_mat_text(mat, axs):
 
 # This function will take a guess at which process generated the entire thing.
 def take_a_guess(tape, p0, p1):
+    # num = 0
+    # denum = 0
+    num = 1
+    denum = 1
+    for i in range(len(tape)-1):
+        from_state = tape[i]
+        to_state = tape[i+1]
+        num  *= p0[from_state,to_state]
+        denum *= p1[from_state,to_state]
+        # num += np.log(p0[from_state,to_state])
+        # denum += np.log(p1[from_state,to_state])
+
+    return 0 if num > denum else 1
+def return_lls(tape, p0, p1):
     num = 0
     denum = 0
     for i in range(len(tape)-1):
@@ -36,7 +50,7 @@ def take_a_guess(tape, p0, p1):
         num += np.log(p0[from_state,to_state])
         denum += np.log(p1[from_state,to_state])
 
-    return 0 if num > denum else 1
+    return -num,-denum
 
 def test_estimator(rates,args):
     # Get the Probabilities
@@ -68,8 +82,8 @@ if __name__ == '__main__':
     args = argparser()
 
     # Created Tapes
-    rates1 = {"lam": 0.4,"mu":1.2} 
-    rates2 = {"lam": 0.4,"mu":1.4} 
+    rates1 = {"lam": 4/10,"mu":12/10} 
+    rates2 = {"lam": 8/10,"mu":14/10} 
     print("Null Rates ", rates1)
     print("Alternative Rates ", rates2)
 
@@ -88,40 +102,67 @@ if __name__ == '__main__':
     # We now have the analytical results we need
 
     # We will create multiple different samples here
-    hit_rates = []
-    #  samp_rates = [args.samprate *2 ** j for j in range(10)]
-    samp_rates = np.linspace(0.01,3,400)
+    # samp_rates = [args.samprate *2 ** j for j in range(10)]
+    samp_rates = np.logspace(-3,4,1000, base=2)
+    # samp_rates = np.log(samp_rates)
+    # samp_rates = 2.758 + (0.597)*np.log(samp_rates)
 
     tgm0 = generate_true_gmatrix(rates[0], args.state_limit)
     tgm1 = generate_true_gmatrix(rates[1], args.state_limit)
 
+    curves = []
+    for avs in range(10):
+        hit_rates = []
+        l0s,l1s = ([],[])
 
-    for cur_samp_rate in samp_rates:
-        
-        # Loop through multiple sampling rate
-        true_values = np.random.choice(2,args.detection_guesses)
-        print('Trying Sampling Rate: ',cur_samp_rate)
-        guess = []
+        for cur_samp_rate in samp_rates:
+            
+            # Loop through multiple sampling rate
+            true_values = np.random.choice(2,args.detection_guesses)
+            print('Trying Sampling Rate: ',cur_samp_rate)
+            guess = []
 
-        true_p0 = get_true_trans_probs(Q=tgm0*(1/cur_samp_rate))
-        true_p1 = get_true_trans_probs(Q=tgm1*(1/cur_samp_rate))
-        
-        
-        # For every sample rate we will generate sample path and guess from it
-        for i in range(args.detection_guesses):
-            # Generate a path from either q0 or 1
-            roe = RaceOfExponentials(args.length,rates[true_values[i]],state_limit=args.state_limit)
-            holdTimes_tape, state_tape = roe.generate_history(args.init_state)
-            sampled_tape = simple_sample(cur_samp_rate, state_tape, holdTimes_tape)
-            guess.append(take_a_guess(sampled_tape, true_p0, true_p1))
+            true_p0 = get_true_trans_probs(Q=tgm0*(1/cur_samp_rate))
+            true_p1 = get_true_trans_probs(Q=tgm1*(1/cur_samp_rate))
+            
+            
+            l0c,l1c = ([],[])
+            # For every sample rate we will generate sample path and guess from it
+            for i in range(args.detection_guesses):
+                # Generate a path from either q0 or 1
+                roe = RaceOfExponentials(args.length,rates[true_values[i]],state_limit=args.state_limit)
+                holdTimes_tape, state_tape = roe.generate_history(args.init_state)
+                sampled_tape = simple_sample(cur_samp_rate, state_tape, holdTimes_tape)
+                guess.append(take_a_guess(sampled_tape, true_p0, true_p1))
 
-        num_hits = (true_values == guess).sum()
-        hit_rates.append(num_hits/args.detection_guesses)
-        print("For Sampling Rate {} we have ratio of right guesses: {}/{}".format(cur_samp_rate,num_hits,args.detection_guesses))
+                l0, l1 = return_lls(sampled_tape, true_p0, true_p1)
 
-    plt.plot(samp_rates,hit_rates)
+                l0c.append(l0)
+                l1c.append(l1)
+
+            l0s.append(np.mean(l0c))
+            l1s.append(np.mean(l1c))
+
+            num_hits = (true_values == guess).sum()
+            hit_rates.append(num_hits/args.detection_guesses)
+            print("For Sampling Rate {} we have ratio of right guesses: {}/{}".format(cur_samp_rate,num_hits,args.detection_guesses))
+            # print("Going through Sampling Rate {} ".format(cur_samp_rate))
+        curves.append(hit_rates)
+    curves_np = np.array(curves)
+    avgd = np.mean(curves_np,axis=0)
+
+    print("shape of curves np ",curves_np.shape)
+    print("shape of curves agd ",avgd.shape)
+
+
+    # plt.plot(samp_rates,hit_rates)
+    # plt.plot(l0s,label='Null Likelihood')
+    # plt.plot(l1s,label='Alternative Likelihood')
+    plt.plot(samp_rates,np.log(avgd),label='Sampling Rates(log scale)')
     for i,rate in enumerate(rates):
-        plt.axvline(rate['lam'],label='$\lambda_'+str(i)+'$',color='g')
-        plt.axvline(rate['mu'],label='$\mu_'+str(i)+'$',color='g')
+        plt.axvline(rate['lam'],label='$\lambda_'+str(i)+'$')
+        plt.axvline(rate['mu'],label='$\mu_'+str(i)+'$')
     plt.title('Number of right guesses vs sampling rate')
+    plt.xscale("log",base=2)
+    plt.legend()
     plt.show()
