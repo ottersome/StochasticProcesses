@@ -111,7 +111,7 @@ if __name__ == '__main__':
     tgm1 = generate_true_gmatrix(rates[1], args.state_limit)
 
     curves = []
-    for avs in range(10):
+    for avs in range(20):
         hit_rates = []
         l0s,l1s = ([],[])
 
@@ -148,17 +148,15 @@ if __name__ == '__main__':
             print("For Sampling Rate {} we have ratio of right guesses: {}/{}".format(cur_samp_rate,num_hits,args.detection_guesses))
             # print("Going through Sampling Rate {} ".format(cur_samp_rate))
         curves.append(hit_rates)
+    np.save('curves.npy', curves)
+
     curves_np = np.array(curves)
     avgd = np.mean(curves_np,axis=0)
 
-    print("shape of curves np ",curves_np.shape)
-    print("shape of curves agd ",avgd.shape)
-
-
-    # plt.plot(samp_rates,hit_rates)
+    #  plt.plot(samp_rates,hit_rates)
     # plt.plot(l0s,label='Null Likelihood')
     # plt.plot(l1s,label='Alternative Likelihood')
-    plt.plot(samp_rates,np.log(avgd),label='Sampling Rates(log scale)')
+    plt.plot(samp_rates,(-1)*np.log(avgd),label='Sampling Rates(log scale)')
     for i,rate in enumerate(rates):
         plt.axvline(rate['lam'],label='$\lambda_'+str(i)+'$')
         plt.axvline(rate['mu'],label='$\mu_'+str(i)+'$')
