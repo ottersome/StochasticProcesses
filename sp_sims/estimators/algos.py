@@ -24,10 +24,10 @@ def event_driven_mle(state_tape,holdTimes_tape):
 
     return gen_matrix
 
-def power_series_exp(Q,power=8):
+def power_series_exp(Q,power=64):
     assert Q.shape[0] == Q.shape[1]
     # Let us first get the norm of Q for sanity reasons
-    print("Q's Frob Norm is ",np.linalg.norm(Q,ord='fro'))
+    # print("Q's Frob Norm is ",np.linalg.norm(Q,ord='fro'))
 
     # Test for convergence
     final_mat = np.zeros_like(Q)
