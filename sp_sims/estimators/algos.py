@@ -24,7 +24,7 @@ def event_driven_mle(state_tape,holdTimes_tape):
 
     return gen_matrix
 
-def power_series_exp(Q,power=64):
+def power_series_exp(Q,power=512):
     assert Q.shape[0] == Q.shape[1]
     # Let us first get the norm of Q for sanity reasons
     # print("Q's Frob Norm is ",np.linalg.norm(Q,ord='fro'))
@@ -33,7 +33,7 @@ def power_series_exp(Q,power=64):
     final_mat = np.zeros_like(Q)
     for k in range(0,power):
         powered_matrix= np.power(Q,k)
-        cur_mat = ((1/np.math.factorial(k))) * powered_matrix
+        cur_mat = (1/np.math.factorial(k)) * powered_matrix
         final_mat += cur_mat
     return final_mat
 

@@ -166,3 +166,5 @@ def quick_sample(sampling_rate,state_tapes,holding_t_tapes):
 
     return np.asarray(states)
 
+def psd(stat_probs):
+    pass

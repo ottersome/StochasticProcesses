@@ -2,6 +2,7 @@ import numpy as np
 import sys
 import matplotlib.pyplot as plt
 import argparse
+from math import factorial
 from scipy.linalg import expm
 from sp_sims.simulators.stochasticprocesses import *
 from sp_sims.statistics.statistics import *
@@ -37,10 +38,10 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
 
 
 def get_true_trans_probs(Q):
-    # P = power_series_exp(Q)
+    #  P = power_series_exp(Q)
     P = expm(Q)
     # Get the Norm 
-    # print(np.linalg.norm(Q,ord='fro'))
+    #  print(np.linalg.norm(Q,ord='fro'))
     return P
 
 
@@ -141,7 +142,7 @@ if __name__ == '__main__':
     tgm1 = np.array([[-rates1['lam'],rates1['lam']],[rates1['mu'],-rates1['mu']]])
 
     # Chose a random rate to test:
-    ran_index = np.random.randint(0,1000,1)
+    ran_index = np.random.randint(780,1000,1)
     print("Random Index is ", ran_index)
 
     curves = []
@@ -149,10 +150,29 @@ if __name__ == '__main__':
     l0s,l1s = ([],[])
 
     j = 0
+
+    true_values = np.random.choice(2,args.detection_guesses)
+    hts, sts = ([],[])
+    for i in range(args.detection_guesses):
+        roe = RaceOfExponentials(args.length,rates[true_values[i]],state_limit=args.state_limit)
+        holdTimes_tape, state_tape = roe.generate_history(args.init_state)
+        hts.append(holdTimes_tape); sts.append(state_tape)
+    # Cont Probabilities
+    cont_dist = []
+    fst = np.array(sts[0])
+    fht = np.array(hts[0])
+    for i in range(2):
+        tot_times = np.sum(fht[fst==i])
+        cont_dist.append(tot_times)
+    print(fht[fst==0])
+    cont_dist = np.array(cont_dist)/np.sum(np.array(cont_dist))
+    cont_dist = {i:cd for i,cd in enumerate(cont_dist)}
+    print("Cont Dist : ",cont_dist)
+
+
     for cur_samp_rate in tqdm(samp_rates):
         
         # Loop through multiple sampling rate
-        true_values = np.random.choice(2,args.detection_guesses)
         # print('Trying Sampling Rate: ',cur_samp_rate)
         guess = []
 
@@ -166,9 +186,8 @@ if __name__ == '__main__':
         # For every sample rate we will generate sample path and guess from it
         for i in range(args.detection_guesses):
             # Generate a path from either q0 or 1
-            roe = RaceOfExponentials(args.length,rates[true_values[i]],state_limit=args.state_limit)
-            holdTimes_tape, state_tape = roe.generate_history(args.init_state)
-            sampled_tape = simple_sample(cur_samp_rate, state_tape, holdTimes_tape)
+            # TODO: Use decimation to make it faster
+            sampled_tape = simple_sample(cur_samp_rate, sts[i],hts[i])
             guess.append(take_a_guess(sampled_tape, true_p0, true_p1))
 
             l0, l1 = return_lls(sampled_tape, true_p0, true_p1)
@@ -176,7 +195,7 @@ if __name__ == '__main__':
             l0c.append(l0)
             l1c.append(l1)
 
-            if i == 4 and j==900:
+            if i == 4 and j==836:
                 # Get Empirical Transition Matrix:
                 empp = trans_matrix(sampled_tape)
                 fig, axs = plt.subplots(1,2)
@@ -186,11 +205,16 @@ if __name__ == '__main__':
                 axs[1].set_title('Sampled Tape')
                 print('cur_samp rate : ', cur_samp_rate)
                 fig.suptitle("P for samprate {} and parameters m:{}, l:{}".format(cur_samp_rate,rates[true_values[i]]['mu'],rates[true_values[i]]['lam']))
+                # Get the single probabilities
+                u,c = np.unique(sampled_tape, return_counts=True)
+                c = c/np.sum(c)
+                print("Chain Distribution is : ",dict(zip(u,c)))
+                # Continuous Probabilities
+                print("Cont Distribution is : ",cont_dist)
+
                 plt.show()
+
         j += 1
-                
-
-
         l0s.append(np.mean(l0c))
         l1s.append(np.mean(l1c))
 
