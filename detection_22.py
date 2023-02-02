@@ -121,10 +121,10 @@ if __name__ == '__main__':
     args = argparser()
 
     # Created Tapes
-    rates0 = {"lam": 4/10,"mu":12/10} 
-    rates1 = {"lam": 100/10,"mu":122/10} 
-    # rates0 = {"lam": 4/10,"mu":20/10} 
-    # rates1 = {"lam": 4/10,"mu":5/10} 
+    # rates0 = {"lam": 4/10,"mu":12/10} 
+    # rates1 = {"lam": 100/10,"mu":122/10} 
+    rates0 = {"lam": 4/10,"mu":14/10} 
+    rates1 = {"lam": 8/10,"mu":12/10} 
     print("Null Rates ", rates0)
     print("Alternative Rates ", rates1)
 
@@ -145,7 +145,7 @@ if __name__ == '__main__':
     # We will create multiple different samples here
     # samp_rates = [args.samprate *2 ** j for j in range(10)]
     # samp_rates = np.linspace(0.001,16,1000)
-    samp_rates = np.logspace(-3,8,1000, base=2)
+    samp_rates = np.logspace(-3,8,10000, base=2)
 
     tgm0 = np.array([[-rates0['lam'],rates0['lam']],[rates0['mu'],-rates0['mu']]])
     tgm1 = np.array([[-rates1['lam'],rates1['lam']],[rates1['mu'],-rates1['mu']]])
@@ -238,6 +238,8 @@ if __name__ == '__main__':
     axs[1].set_title('ROC Curve')
     axs[1].set_xlabel('1-Specificity')
     axs[1].set_ylabel('Sensitivity')
+    axs[1].set_xlim([0,1])
+    axs[1].set_ylim([0,1])
 
     # Likelihoods
     # axs[1].plot(samp_rates, l0s,label='L0', c='blue')
