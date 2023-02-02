@@ -90,5 +90,10 @@ def argparser():
                         type=str,
                         default = './secondary_tools/complex_generator.npy',
                         help='Initial State in the real line.(Amnt of current events)')
+    parser.add_argument('--num_samples',
+                        dest='num_samples',
+                        type=int,
+                        default =None,
+                        help='Number of Samples when sampling')
 
     return parser.parse_args()

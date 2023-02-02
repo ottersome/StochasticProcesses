@@ -2,6 +2,7 @@ import numpy as np
 import sys
 import matplotlib.pyplot as plt
 import argparse
+from sklearn.metrics import roc_curve
 from math import factorial
 from scipy.linalg import expm
 from sp_sims.simulators.stochasticprocesses import *
@@ -70,14 +71,21 @@ def take_a_guess(tape, p0, p1):
 def rgt():
     return (random.random(),random.random(),random.random())
 
+def return_ls(tape, p0, p1):
+    num = 1
+    denum = 1
+    for i in range(len(tape)-1):
+        from_state = tape[i]
+        to_state = tape[i+1]
+        num  *= p0[from_state,to_state]
+        denum *= p1[from_state,to_state]
+    return num,denum
 def return_lls(tape, p0, p1):
     num = 0
     denum = 0
     for i in range(len(tape)-1):
         from_state = tape[i]
         to_state = tape[i+1]
-        #  num  *= p0[from_state,to_state]
-        #  denum *= p1[from_state,to_state]
         num += np.log(p0[from_state,to_state])
         denum += np.log(p1[from_state,to_state])
 
@@ -114,7 +122,9 @@ if __name__ == '__main__':
 
     # Created Tapes
     rates0 = {"lam": 4/10,"mu":12/10} 
-    rates1 = {"lam": 8/10,"mu":14/10} 
+    rates1 = {"lam": 100/10,"mu":122/10} 
+    # rates0 = {"lam": 4/10,"mu":20/10} 
+    # rates1 = {"lam": 4/10,"mu":5/10} 
     print("Null Rates ", rates0)
     print("Alternative Rates ", rates1)
 
@@ -134,18 +144,16 @@ if __name__ == '__main__':
 
     # We will create multiple different samples here
     # samp_rates = [args.samprate *2 ** j for j in range(10)]
-    samp_rates = np.logspace(-3,4,1000, base=2)
-    # samp_rates = np.log(samp_rates)
-    # samp_rates = 2.758 + (0.597)*np.log(samp_rates)
+    # samp_rates = np.linspace(0.001,16,1000)
+    samp_rates = np.logspace(-3,8,1000, base=2)
 
     tgm0 = np.array([[-rates0['lam'],rates0['lam']],[rates0['mu'],-rates0['mu']]])
     tgm1 = np.array([[-rates1['lam'],rates1['lam']],[rates1['mu'],-rates1['mu']]])
 
     # Chose a random rate to test:
-    ran_index = np.random.randint(780,1000,1)
-    print("Random Index is ", ran_index)
+    #ran_index = np.random.randint(780,1000,1)
+    #print("Random Index is ", ran_index)
 
-    curves = []
     hit_rates = []
     l0s,l1s = ([],[])
 
@@ -153,22 +161,18 @@ if __name__ == '__main__':
 
     true_values = np.random.choice(2,args.detection_guesses)
     hts, sts = ([],[])
+    last_times  = []
     for i in range(args.detection_guesses):
         roe = RaceOfExponentials(args.length,rates[true_values[i]],state_limit=args.state_limit)
         holdTimes_tape, state_tape = roe.generate_history(args.init_state)
         hts.append(holdTimes_tape); sts.append(state_tape)
-    # Cont Probabilities
-    cont_dist = []
-    fst = np.array(sts[0])
-    fht = np.array(hts[0])
-    for i in range(2):
-        tot_times = np.sum(fht[fst==i])
-        cont_dist.append(tot_times)
-    print(fht[fst==0])
-    cont_dist = np.array(cont_dist)/np.sum(np.array(cont_dist))
-    cont_dist = {i:cd for i,cd in enumerate(cont_dist)}
-    print("Cont Dist : ",cont_dist)
+        last_times.append(np.cumsum(holdTimes_tape)[-1])
+    
+    print("Max:{} min:{} and mean:{} last times".format(np.max(last_times), np.min(last_times), np.mean(last_times)))
 
+
+    sensitivities = []
+    invspecificities = []
 
     for cur_samp_rate in tqdm(samp_rates):
         
@@ -181,38 +185,29 @@ if __name__ == '__main__':
 
         true_ps = [true_p0,true_p1]
         
-        
         l0c,l1c = ([],[])
         # For every sample rate we will generate sample path and guess from it
         for i in range(args.detection_guesses):
             # Generate a path from either q0 or 1
             # TODO: Use decimation to make it faster
-            sampled_tape = simple_sample(cur_samp_rate, sts[i],hts[i])
+            sampled_tape = simple_sample(cur_samp_rate, sts[i],hts[i],args.num_samples)
             guess.append(take_a_guess(sampled_tape, true_p0, true_p1))
 
-            l0, l1 = return_lls(sampled_tape, true_p0, true_p1)
+            assert len(sampled_tape) >= args.num_samples, "Not enough samples"
+
+            l0, l1 = return_ls(sampled_tape, true_p0, true_p1)
 
             l0c.append(l0)
             l1c.append(l1)
 
-            if i == 4 and j==836:
-                # Get Empirical Transition Matrix:
-                empp = trans_matrix(sampled_tape)
-                fig, axs = plt.subplots(1,2)
-                axs[0].set_title('TheoreticalTape')
-                print_mat_text(true_ps[true_values[i]],axs[0])
-                print_mat_text(empp,axs[1])
-                axs[1].set_title('Sampled Tape')
-                print('cur_samp rate : ', cur_samp_rate)
-                fig.suptitle("P for samprate {} and parameters m:{}, l:{}".format(cur_samp_rate,rates[true_values[i]]['mu'],rates[true_values[i]]['lam']))
-                # Get the single probabilities
-                u,c = np.unique(sampled_tape, return_counts=True)
-                c = c/np.sum(c)
-                print("Chain Distribution is : ",dict(zip(u,c)))
-                # Continuous Probabilities
-                print("Cont Distribution is : ",cont_dist)
-
-                plt.show()
+        # For Plotting ROC Curve
+        hits_index = (true_values == guess)
+        num_negs = np.sum(true_values == 0)#TN + FP
+        num_pos = np.sum(true_values == 1)#TP + FN
+        tp = (true_values[hits_index] == 1).sum()
+        tn = (true_values[hits_index] == 0).sum()
+        sensitivities.append(tp/num_pos)
+        invspecificities.append(1-(tn/num_negs))
 
         j += 1
         l0s.append(np.mean(l0c))
@@ -220,11 +215,7 @@ if __name__ == '__main__':
 
         num_hits = (true_values == guess).sum()
         hit_rates.append(num_hits/args.detection_guesses)
-        # print("For Sampling Rate {} we have ratio of right guesses: {}/{}".format(cur_samp_rate,num_hits,args.detection_guesses))
-        # print("Going through Sampling Rate {} ".format(cur_samp_rate))
 
-    # curves_np = np.array(curves)
-    # avgd = np.mean(curves_np,axis=0)
     smoothed_hits = savitzky_golay(hit_rates, 21, 3)
 
     fig, axs = plt.subplots(1,2)
@@ -233,18 +224,45 @@ if __name__ == '__main__':
     # plt.plot(l0s,label='Null Likelihood')
     # plt.plot(l1s,label='Alternative Likelihood')
     # axs[0].plot(samp_rates,(-1)*np.log(hit_rates),label='Sampling Rates(log scale)')
-    axs[0].plot(samp_rates,hit_rates,label='Sampling Rates(log scale)',color='gray',alpha=0.2,linewidth=1)
-    axs[0].plot(samp_rates,smoothed_hits,label='Sampling Rates(log scale)',color='green')
+    axs[0].plot(samp_rates,hit_rates,label='Accuracy',color='gray',alpha=0.4,linewidth=1)
+    axs[0].plot(samp_rates,smoothed_hits,label='Smoothed Accuracy (SG-Filter)',color='green')
     for i,rate in enumerate(rates):
-        axs[0].axvline(rate['lam'],label='$\lambda_'+str(i)+'$',c=rgt())
-        axs[0].axvline(rate['mu'],label='$\mu_'+str(i)+'$',c=rgt())
-    axs[0].set_title('Number of right guesses vs sampling rate')
+        axs[0].axvline(rate['lam'],label='$\lambda_'+str(i)+'=$'+str(rate['lam']),c=rgt())
+        axs[0].axvline(rate['mu'],label='$\mu_'+str(i)+'=$'+str(rate['mu']),c=rgt())
+    axs[0].set_title('$\\frac{G_C}{G_T}$ with Respect to Sampling Rate')
     axs[0].set_xscale("log",base=2)
     axs[0].legend()
 
+    # ROC Cruve
+    axs[1].scatter(invspecificities, sensitivities, np.exp(3*np.array(samp_rates)/np.max(samp_rates)))
+    axs[1].set_title('ROC Curve')
+    axs[1].set_xlabel('1-Specificity')
+    axs[1].set_ylabel('Sensitivity')
+
     # Likelihoods
-    axs[1].plot(samp_rates, l0s,label='L0', c='blue')
-    axs[1].plot(samp_rates, l1s,label='L1',c='green')
-    axs[1].set_title('Likelihoods with respect to sampling rate')
+    # axs[1].plot(samp_rates, l0s,label='L0', c='blue')
+    # axs[1].plot(samp_rates, l1s,label='L1',c='green')
+    # axs[1].set_title('Likelihoods $\Pi_i P_{\Delta t}(i,j|H)$')
     plt.legend()
     plt.show()
+
+
+
+    
+# if False and i == 4 and j==836:
+    # # Get Empirical Transition Matrix:
+    # empp = trans_matrix(sampled_tape)
+    # fig, axs = plt.subplots(1,2)
+    # axs[0].set_title('TheoreticalTape')
+    # print_mat_text(true_ps[true_values[i]],axs[0])
+    # print_mat_text(empp,axs[1])
+    # axs[1].set_title('Sampled Tape')
+    # print('cur_samp rate : ', cur_samp_rate)
+    # fig.suptitle("P for samprate {} and parameters m:{}, l:{}".format(cur_samp_rate,rates[true_values[i]]['mu'],rates[true_values[i]]['lam']))
+    # # Get the single probabilities
+    # u,c = np.unique(sampled_tape, return_counts=True)
+    # c = c/np.sum(c)
+    # print("Chain Distribution is : ",dict(zip(u,c)))
+    # # Continuous Probabilities
+    # # print("Cont Distribution is : ",cont_dist)
+    # plt.show()

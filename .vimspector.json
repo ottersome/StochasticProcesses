@@ -7,24 +7,27 @@
         "name": "Runny: Launch",
         "type": "python",
         "request": "launch",
-        //"cwd": "~/Research/StochasticProcesses/",
-        "cwd": "~/Projects/StochasticProcesses/",
+        "cwd": "/Users/rac716/Research/StochasticProcesses",
+        "python": "~/miniforge3/envs/rs39/bin/python",
+        //"cwd": "~/Projects/StochasticProcesses/",
         //"python": "~/miniforge3/envs/rs39/bin/python",
-        "python": "~/miniconda3/envs/datascience/bin/python",
+        //"python": "~/miniconda3/envs/datascience/bin/python",
+        //"python": "~/miniconda3/envs/datascience/bin/python",
         "stopOnEntry": true,
         "console": "externalTerminal",
         "debugOptions": [],
-        "args" : ["--length","100",
+        "args" : ["--length","1000",
             //"--mu","1.5",
             //"--lambda","1.0",
             //"--samprate","0.1",
             //"--init_state","0",
-            //"--detection_guesses","100",
-            "--show_sanity_check","False",
+            "--state_limit","1",
+            "--num_samples","10",
+            "--detection_guesses","10",
+            "--show_sanity_check","False"
             //"--method","log_mat",
-            "--state_limit","5"
             ],
-        "program": "~/Projects/StochasticProcesses/general_process_sim.py"
+        "program": "~/Research/StochasticProcesses/detection_22.py"
         //"program": "~/Projects/StochasticProcesses/approximations.py"
         //"program": "~/Research/StochasticProcesses/detection.py"
       }

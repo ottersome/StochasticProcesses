@@ -109,7 +109,7 @@ def emp_steady_state_distribution(state_tape):
     
 
 # Tapes will be a column vectors
-def simple_sample(sampling_rate,state_tapes,holding_t_tape):
+def simple_sample(sampling_rate,state_tapes,holding_t_tape, max_samples=None):
     # We just have to get a certain percentage of the states
     # Create array of unique elements
     sampling_time = 1/sampling_rate
@@ -125,6 +125,7 @@ def simple_sample(sampling_rate,state_tapes,holding_t_tape):
     # Get Sample Tape
     states = []
     state_tapo = np.asarray(state_tapes)
+    no_samples = 1
     for i,time in enumerate(np.arange(0,transition_times[-1],sampling_time)):
         # Get Index of State
         state_index  = (time >= starting_times) & (time < transition_times)
@@ -132,6 +133,11 @@ def simple_sample(sampling_rate,state_tapes,holding_t_tape):
         assert len(state_fallen_into) == 1
         #  assert (len(state_fallen_into) != 1)
         states.append(state_fallen_into[0])
+        if max_samples != None:
+            if no_samples >= max_samples:
+                break
+            else: 
+                no_samples += 1
 
     return np.asarray(states)
     

@@ -79,6 +79,7 @@ def test_estimator(rates,args):
 
 if __name__ == '__main__':
     # Go through arguments
+    np.random.seed(123)
     args = argparser()
 
     # Created Tapes
@@ -90,10 +91,8 @@ if __name__ == '__main__':
     print("Holding rates are : {} {}".format(rates1['lam']+rates1['mu'],rates2['lam']+rates2['mu']))
     print("Holding time intervals are : {} {}".format(1/(rates1['lam']+rates1['mu']),1/(rates2['lam']+rates2['mu'])))
 
-    
     # Sanity Check
     # test_estimator(rates1,args)
-    
     # We dont even need that. We just neeed a Q matrix ||Q|| < ln 2
 
     # Create(by hand) Q matrix
@@ -104,13 +103,11 @@ if __name__ == '__main__':
     # We will create multiple different samples here
     # samp_rates = [args.samprate *2 ** j for j in range(10)]
     samp_rates = np.logspace(-3,4,1000, base=2)
-    # samp_rates = np.log(samp_rates)
-    # samp_rates = 2.758 + (0.597)*np.log(samp_rates)
 
     tgm0 = generate_true_gmatrix(rates[0], args.state_limit)
     tgm1 = generate_true_gmatrix(rates[1], args.state_limit)
 
-    curves = []
+
     for avs in range(20):
         hit_rates = []
         l0s,l1s = ([],[])
@@ -147,9 +144,8 @@ if __name__ == '__main__':
             hit_rates.append(num_hits/args.detection_guesses)
             print("For Sampling Rate {} we have ratio of right guesses: {}/{}".format(cur_samp_rate,num_hits,args.detection_guesses))
             # print("Going through Sampling Rate {} ".format(cur_samp_rate))
-        curves.append(hit_rates)
-    np.save('curves.npy', curves)
 
+    np.save('curves.npy', curves)
     curves_np = np.array(curves)
     avgd = np.mean(curves_np,axis=0)
 
