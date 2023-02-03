@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
+import datetime
 import argparse
 from sklearn.metrics import roc_curve
 from math import factorial
@@ -119,6 +120,7 @@ def test_estimator(rates,args):
 if __name__ == '__main__':
     # Go through arguments
     args = argparser()
+    np.random.seed(123)
 
     # Created Tapes
     # rates0 = {"lam": 4/10,"mu":12/10} 
@@ -145,7 +147,7 @@ if __name__ == '__main__':
     # We will create multiple different samples here
     # samp_rates = [args.samprate *2 ** j for j in range(10)]
     # samp_rates = np.linspace(0.001,16,1000)
-    samp_rates = np.logspace(-3,8,10000, base=2)
+    samp_rates = np.logspace(-3,8,1000, base=2)
 
     tgm0 = np.array([[-rates0['lam'],rates0['lam']],[rates0['mu'],-rates0['mu']]])
     tgm1 = np.array([[-rates1['lam'],rates1['lam']],[rates1['mu'],-rates1['mu']]])
@@ -159,7 +161,8 @@ if __name__ == '__main__':
 
     j = 0
 
-    true_values = np.random.choice(2,args.detection_guesses)
+    #true_values = np.random.choice(2,args.detection_guesses)
+    true_values = np.ones(args.detection_guesses).astype(np.int)
     hts, sts = ([],[])
     last_times  = []
     for i in range(args.detection_guesses):
@@ -169,6 +172,10 @@ if __name__ == '__main__':
         last_times.append(np.cumsum(holdTimes_tape)[-1])
     
     print("Max:{} min:{} and mean:{} last times".format(np.max(last_times), np.min(last_times), np.mean(last_times)))
+
+    fprs = [] # False Positive Rates
+    fnrs = [] # False Negative Rates
+
 
 
     sensitivities = []
@@ -209,6 +216,9 @@ if __name__ == '__main__':
         sensitivities.append(tp/num_pos)
         invspecificities.append(1-(tn/num_negs))
 
+        fprs.append((args.detection_guesses-tp)/(args.detection_guesses))
+        fnrs.append((args.detection_guesses-tn)/(args.detection_guesses))
+
         j += 1
         l0s.append(np.mean(l0c))
         l1s.append(np.mean(l1c))
@@ -219,6 +229,9 @@ if __name__ == '__main__':
     smoothed_hits = savitzky_golay(hit_rates, 21, 3)
 
     fig, axs = plt.subplots(1,2)
+    fig.tight_layout()
+    fig.set_size_inches(10,10)
+
     plt.rcParams['text.usetex'] = True
     #  plt.plot(samp_rates,hit_rates)
     # plt.plot(l0s,label='Null Likelihood')
@@ -226,6 +239,8 @@ if __name__ == '__main__':
     # axs[0].plot(samp_rates,(-1)*np.log(hit_rates),label='Sampling Rates(log scale)')
     axs[0].plot(samp_rates,hit_rates,label='Accuracy',color='gray',alpha=0.4,linewidth=1)
     axs[0].plot(samp_rates,smoothed_hits,label='Smoothed Accuracy (SG-Filter)',color='green')
+    axs[0].plot(samp_rates, fprs, label='False Positive Rates(T2)', color='b')
+    axs[0].plot(samp_rates, fnrs, label='False Negative Rates(T1)', color='r')
     for i,rate in enumerate(rates):
         axs[0].axvline(rate['lam'],label='$\lambda_'+str(i)+'=$'+str(rate['lam']),c=rgt())
         axs[0].axvline(rate['mu'],label='$\mu_'+str(i)+'=$'+str(rate['mu']),c=rgt())
@@ -234,37 +249,22 @@ if __name__ == '__main__':
     axs[0].legend()
 
     # ROC Cruve
-    axs[1].scatter(invspecificities, sensitivities, np.exp(3*np.array(samp_rates)/np.max(samp_rates)))
-    axs[1].set_title('ROC Curve')
-    axs[1].set_xlabel('1-Specificity')
-    axs[1].set_ylabel('Sensitivity')
-    axs[1].set_xlim([0,1])
-    axs[1].set_ylim([0,1])
+    #  axs[1].scatter(invspecificities, sensitivities, np.exp(3*np.array(samp_rates)/np.max(samp_rates)))
+    #  axs[1].set_title('ROC Curve')
+    #  axs[1].set_xlabel('1-Specificity')
+    #  axs[1].set_ylabel('Sensitivity')
+    #  axs[1].set_xlim([0,1])
+    #  axs[1].set_ylim([0,1])
 
     # Likelihoods
-    # axs[1].plot(samp_rates, l0s,label='L0', c='blue')
-    # axs[1].plot(samp_rates, l1s,label='L1',c='green')
-    # axs[1].set_title('Likelihoods $\Pi_i P_{\Delta t}(i,j|H)$')
+    axs[1].plot(samp_rates, l0s,label='L0', c='blue')
+    axs[1].plot(samp_rates, l1s,label='L1',c='green')
+    axs[1].set_title('Likelihoods $\Pi_i P_{\Delta t}(i,j|H)$')
     plt.legend()
+    now = datetime.datetime.now()
+    time_frm = now.strftime('%Y-%m-%dT-%H:%M:%S')
+
+    plt.savefig('Images/run_{}'.format(time_frm))
     plt.show()
 
 
-
-    
-# if False and i == 4 and j==836:
-    # # Get Empirical Transition Matrix:
-    # empp = trans_matrix(sampled_tape)
-    # fig, axs = plt.subplots(1,2)
-    # axs[0].set_title('TheoreticalTape')
-    # print_mat_text(true_ps[true_values[i]],axs[0])
-    # print_mat_text(empp,axs[1])
-    # axs[1].set_title('Sampled Tape')
-    # print('cur_samp rate : ', cur_samp_rate)
-    # fig.suptitle("P for samprate {} and parameters m:{}, l:{}".format(cur_samp_rate,rates[true_values[i]]['mu'],rates[true_values[i]]['lam']))
-    # # Get the single probabilities
-    # u,c = np.unique(sampled_tape, return_counts=True)
-    # c = c/np.sum(c)
-    # print("Chain Distribution is : ",dict(zip(u,c)))
-    # # Continuous Probabilities
-    # # print("Cont Distribution is : ",cont_dist)
-    # plt.show()
