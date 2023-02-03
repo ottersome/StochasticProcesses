@@ -181,6 +181,7 @@ if __name__ == '__main__':
     sensitivities = []
     invspecificities = []
 
+
     for cur_samp_rate in tqdm(samp_rates):
         
         # Loop through multiple sampling rate
@@ -216,10 +217,11 @@ if __name__ == '__main__':
         sensitivities.append(tp/num_pos)
         invspecificities.append(1-(tn/num_negs))
 
-        fprs.append((args.detection_guesses-tp)/(args.detection_guesses))
-        fnrs.append((args.detection_guesses-tn)/(args.detection_guesses))
+        fprs.append((num_negs-tn)/(num_negs))
+        fnrs.append((num_pos-tp)/(num_pos))# Type 2 Error
 
         j += 1
+        #TODO Likelihood is on *average* larger
         l0s.append(np.mean(l0c))
         l1s.append(np.mean(l1c))
 
@@ -231,6 +233,8 @@ if __name__ == '__main__':
     fig, axs = plt.subplots(1,2)
     fig.tight_layout()
     fig.set_size_inches(10,10)
+    
+    print(fprs)
 
     plt.rcParams['text.usetex'] = True
     #  plt.plot(samp_rates,hit_rates)
