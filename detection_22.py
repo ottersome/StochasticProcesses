@@ -124,7 +124,7 @@ if __name__ == '__main__':
     #np.random.seed(123)
 
     # Created Tapes
-    rates0 = {"lam": 4/10,"mu":12/10}
+    #  rates0 = {"lam": 4/10,"mu":12/10}
     # rates1 = {"lam": 100/10,"mu":150/10}
     rates0 = {"lam": 4/10,"mu":14/10}
     rates1 = {"lam": 8/10,"mu":12/10}
@@ -147,7 +147,7 @@ if __name__ == '__main__':
     # We will create multiple different samples here
     # samp_rates = [args.samprate *2 ** j for j in range(10)]
     # samp_rates = np.linspace(0.001,16,1000)
-    samp_rates = np.logspace(-3,24,args.xres, base=2)
+    samp_rates = np.logspace(-3,12,args.xres, base=2)
 
     tgm0 = np.array([[-rates0['lam'],rates0['lam']],[rates0['mu'],-rates0['mu']]])
     tgm1 = np.array([[-rates1['lam'],rates1['lam']],[rates1['mu'],-rates1['mu']]])
