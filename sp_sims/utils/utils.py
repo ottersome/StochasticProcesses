@@ -125,5 +125,10 @@ def argparser():
                         type=int,
                         default =1000,
                         help='Resolution of X axis')
+    parser.add_argument('--figtitle',
+                        dest='figtitle',
+                        type=str,
+                        default=None,
+                        help='Title for resulting figure')
 
     return parser.parse_args()

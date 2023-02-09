@@ -55,17 +55,17 @@ def print_mat_text(mat, axs):
 
 # This function will take a guess at which process generated the entire thing.
 def take_a_guess(tape, p0, p1):
-    # num = 0
-    # denum = 0
-    num = 1
-    denum = 1
+    num = 0
+    denum = 0
+    # num = 1
+    # denum = 1
     for i in range(len(tape)-1):
         from_state = tape[i]
         to_state = tape[i+1]
-        num  *= p0[from_state,to_state]
-        denum *= p1[from_state,to_state]
-        # num += np.log(p0[from_state,to_state])
-        # denum += np.log(p1[from_state,to_state])
+        # num  *= p0[from_state,to_state]
+        # denum *= p1[from_state,to_state]
+        num += np.log(p0[from_state,to_state])
+        denum += np.log(p1[from_state,to_state])
 
     return 0 if num > denum else 1
 
@@ -81,6 +81,7 @@ def return_ls(tape, p0, p1):
         num  *= p0[from_state,to_state]
         denum *= p1[from_state,to_state]
     return num,denum
+
 def return_lls(tape, p0, p1):
     num = 0
     denum = 0
@@ -120,11 +121,11 @@ def test_estimator(rates,args):
 if __name__ == '__main__':
     # Go through arguments
     args = argparser()
-    np.random.seed(123)
+    #np.random.seed(123)
 
     # Created Tapes
-    #  rates0 = {"lam": 4/10,"mu":12/10}
-    #  rates1 = {"lam": 100/10,"mu":122/10}
+    rates0 = {"lam": 4/10,"mu":12/10}
+    # rates1 = {"lam": 100/10,"mu":150/10}
     rates0 = {"lam": 4/10,"mu":14/10}
     rates1 = {"lam": 8/10,"mu":12/10}
     print("Null Rates ", rates0)
@@ -132,7 +133,6 @@ if __name__ == '__main__':
 
     print("Holding rates are : {} {}".format(rates0['lam']+rates0['mu'],rates1['lam']+rates1['mu']))
     print("Holding time intervals are : {} {}".format(1/(rates0['lam']+rates0['mu']),1/(rates1['lam']+rates1['mu'])))
-
     
     # Sanity Check
     # test_estimator(rates1,args)
@@ -147,7 +147,7 @@ if __name__ == '__main__':
     # We will create multiple different samples here
     # samp_rates = [args.samprate *2 ** j for j in range(10)]
     # samp_rates = np.linspace(0.001,16,1000)
-    samp_rates = np.logspace(-3,8,args.xres, base=2)
+    samp_rates = np.logspace(-3,24,args.xres, base=2)
 
     tgm0 = np.array([[-rates0['lam'],rates0['lam']],[rates0['mu'],-rates0['mu']]])
     tgm1 = np.array([[-rates1['lam'],rates1['lam']],[rates1['mu'],-rates1['mu']]])
@@ -164,8 +164,8 @@ if __name__ == '__main__':
 
     j = 0
 
-    true_values = np.random.choice(2,args.detection_guesses)
-    #  true_values = np.ones(args.detection_guesses).astype(np.int)
+    #true_values = np.random.choice(2,args.detection_guesses)
+    true_values = np.ones(args.detection_guesses).astype(np.int)
     hts, sts = ([],[])
     last_times  = []
     for i in range(args.detection_guesses):
@@ -242,7 +242,7 @@ if __name__ == '__main__':
     ####################################
     # Starting With the Plotting
     ####################################
-    fig, axs = plt.subplots(1,2)
+    fig, axs = plt.subplots(1,3)
     fig.tight_layout()
     fig.set_size_inches(16,10)
 
@@ -252,9 +252,9 @@ if __name__ == '__main__':
     # plt.plot(l1s,label='Alternative Likelihood')
     # axs[0].plot(samp_rates,(-1)*np.log(hit_rates),label='Sampling Rates(log scale)')
     axs[0].plot(samp_rates,hit_rates,label='Accuracy',color='gray',alpha=0.4,linewidth=1)
-    #  axs[0].plot(samp_rates,smoothed_hits,label='Smoothed Accuracy (SG-Filter)',color='green')
-    axs[0].plot(samp_rates, fprs, label='False Positive Rates(T2)', color='b')
-    axs[0].plot(samp_rates, fnrs, label='False Negative Rates(T1)', color='r')
+    axs[0].plot(samp_rates,smoothed_hits,label='Smoothed Accuracy (SG-Filter)',color='green')
+    # axs[0].plot(samp_rates, fprs, label='False Positive Rates(T2)', color='b')
+    # axs[0].plot(samp_rates, fnrs, label='False Negative Rates(T1)', color='r')
 
     for i,rate in enumerate(rates):
         axs[0].axvline(rate['lam'],label='$\lambda_'+str(i)+'=$'+str(rate['lam']),c=rgt())
@@ -264,30 +264,38 @@ if __name__ == '__main__':
     axs[0].legend()
 
     # ROC Cruve
-    #  axs[1].scatter(invspecificities, sensitivities, np.exp(3*np.array(samp_rates)/np.max(samp_rates)))
-    #  axs[1].set_title('ROC Curve')
-    #  axs[1].set_xlabel('1-Specificity')
-    #  axs[1].set_ylabel('Sensitivity')
-    #  axs[1].set_xlim([0,1])
-    #  axs[1].set_ylim([0,1])
+    # axs[1].scatter(invspecificities, sensitivities, np.exp(3*np.array(samp_rates)/np.max(samp_rates)))
+    # axs[1].set_title('ROC Curve')
+    # axs[1].set_xlabel('1-Specificity')
+    # axs[1].set_ylabel('Sensitivity')
+    # axs[1].set_xlim([0,1])
+    # axs[1].set_ylim([0,1])
 
     #  This is for generating a GIF
-    #  save_array_of_pictures(axs[1],samp_rates,invspecificities, sensitivities, './Images/Detection/rocgif/', 'ROC')
+    # save_array_of_pictures(axs[1],samp_rates,invspecificities, sensitivities, './Images/Detection/rocgif/', 'ROC')
 
     # Likelihoods
     l0s,l1s,v0s,v1s = (np.array(l0s), np.array(l1s), np.array(v0s), np.array(v1s))
-    #  axs[1].fill_between(samp_rates, mi0s,ma0s, color='blue', alpha=0.2)
-    #  axs[1].fill_between(samp_rates, mi1s,ma1s, color='green', alpha=0.2)
+    # axs[1].fill_between(samp_rates, mi0s,ma0s, color='blue', alpha=0.2)
+    # axs[1].fill_between(samp_rates, mi1s,ma1s, color='green', alpha=0.2)
     axs[1].fill_between(samp_rates, l0s-v0s,l0s+v0s, color='blue', alpha=0.2)
     axs[1].fill_between(samp_rates, l1s-v1s,l1s+v1s, color='green', alpha=0.2)
-    axs[1].plot(samp_rates, l0s,label='L0', c='blue')
-    axs[1].plot(samp_rates, l1s,label='L1',c='green')
-    axs[1].set_title('Likelihoods $\Pi_i P_{\Delta t}(i,j|H)$')
+    axs[1].plot(samp_rates, l0s,label='$L_0$', c='blue')
+    axs[1].plot(samp_rates, l1s,label='$L_1$',c='green')
+    axs[1].set_title('Likelihoods $-\log\Pi_i P_{\Delta t}(i,j|H)$')
     axs[1].set_xscale("log",base=2)
-    plt.legend()
+    axs[1].legend()
+
+
+    axs[2].plot(samp_rates,np.divide(l0s,l1s),label="$\\frac{L_0}{L_1}$", color='blue')
+    axs[2].set_title("$\\frac{L_0}{L_1}$")
+    axs[2].set_xscale("log",base=2)
+    axs[2].legend()
+
 
     now = datetime.datetime.now()
     time_frm = now.strftime('%Y-%m-%dT-%H:%M:%S')
 
-    plt.savefig('Images/run_{}'.format(time_frm))
+    title = 'Images/d{}_'.format(time_frm)+args.figtitle if args.figtitle != None else 'Images/run_{}'.format(time_frm)
+    plt.savefig(title)
     plt.show()
