@@ -123,10 +123,10 @@ if __name__ == '__main__':
     np.random.seed(123)
 
     # Created Tapes
-    # rates0 = {"lam": 4/10,"mu":12/10} 
-    # rates1 = {"lam": 100/10,"mu":122/10} 
-    rates0 = {"lam": 4/10,"mu":14/10} 
-    rates1 = {"lam": 8/10,"mu":12/10} 
+    #  rates0 = {"lam": 4/10,"mu":12/10}
+    #  rates1 = {"lam": 100/10,"mu":122/10}
+    rates0 = {"lam": 4/10,"mu":14/10}
+    rates1 = {"lam": 8/10,"mu":12/10}
     print("Null Rates ", rates0)
     print("Alternative Rates ", rates1)
 
@@ -147,7 +147,7 @@ if __name__ == '__main__':
     # We will create multiple different samples here
     # samp_rates = [args.samprate *2 ** j for j in range(10)]
     # samp_rates = np.linspace(0.001,16,1000)
-    samp_rates = np.logspace(-3,8,1000, base=2)
+    samp_rates = np.logspace(-3,8,args.xres, base=2)
 
     tgm0 = np.array([[-rates0['lam'],rates0['lam']],[rates0['mu'],-rates0['mu']]])
     tgm1 = np.array([[-rates1['lam'],rates1['lam']],[rates1['mu'],-rates1['mu']]])
@@ -156,13 +156,16 @@ if __name__ == '__main__':
     #ran_index = np.random.randint(780,1000,1)
     #print("Random Index is ", ran_index)
 
-    hit_rates = []
-    l0s,l1s = ([],[])
+    hit_rates = [] 
+    l0s,l1s = ([],[])# Likelihood 
+    v0s,v1s = ([],[])# Variances
+    mi0s,mi1s = ([],[])
+    ma0s,ma1s = ([],[])
 
     j = 0
 
-    #true_values = np.random.choice(2,args.detection_guesses)
-    true_values = np.ones(args.detection_guesses).astype(np.int)
+    true_values = np.random.choice(2,args.detection_guesses)
+    #  true_values = np.ones(args.detection_guesses).astype(np.int)
     hts, sts = ([],[])
     last_times  = []
     for i in range(args.detection_guesses):
@@ -176,11 +179,8 @@ if __name__ == '__main__':
     fprs = [] # False Positive Rates
     fnrs = [] # False Negative Rates
 
-
-
     sensitivities = []
     invspecificities = []
-
 
     for cur_samp_rate in tqdm(samp_rates):
         
@@ -214,6 +214,7 @@ if __name__ == '__main__':
         num_pos = np.sum(true_values == 1)#TP + FN
         tp = (true_values[hits_index] == 1).sum()
         tn = (true_values[hits_index] == 0).sum()
+
         sensitivities.append(tp/num_pos)
         invspecificities.append(1-(tn/num_negs))
 
@@ -224,17 +225,26 @@ if __name__ == '__main__':
         #TODO Likelihood is on *average* larger
         l0s.append(np.mean(l0c))
         l1s.append(np.mean(l1c))
+        v0s.append(np.var(l0c))
+        v1s.append(np.var(l1c))
+        mi0s.append(np.min(l0c))
+        ma0s.append(np.max(l0c))
+        mi1s.append(np.min(l1c))
+        ma1s.append(np.max(l1c))
+
 
         num_hits = (true_values == guess).sum()
         hit_rates.append(num_hits/args.detection_guesses)
 
     smoothed_hits = savitzky_golay(hit_rates, 21, 3)
 
+
+    ####################################
+    # Starting With the Plotting
+    ####################################
     fig, axs = plt.subplots(1,2)
     fig.tight_layout()
-    fig.set_size_inches(10,10)
-    
-    print(fprs)
+    fig.set_size_inches(16,10)
 
     plt.rcParams['text.usetex'] = True
     #  plt.plot(samp_rates,hit_rates)
@@ -242,9 +252,10 @@ if __name__ == '__main__':
     # plt.plot(l1s,label='Alternative Likelihood')
     # axs[0].plot(samp_rates,(-1)*np.log(hit_rates),label='Sampling Rates(log scale)')
     axs[0].plot(samp_rates,hit_rates,label='Accuracy',color='gray',alpha=0.4,linewidth=1)
-    axs[0].plot(samp_rates,smoothed_hits,label='Smoothed Accuracy (SG-Filter)',color='green')
+    #  axs[0].plot(samp_rates,smoothed_hits,label='Smoothed Accuracy (SG-Filter)',color='green')
     axs[0].plot(samp_rates, fprs, label='False Positive Rates(T2)', color='b')
     axs[0].plot(samp_rates, fnrs, label='False Negative Rates(T1)', color='r')
+
     for i,rate in enumerate(rates):
         axs[0].axvline(rate['lam'],label='$\lambda_'+str(i)+'=$'+str(rate['lam']),c=rgt())
         axs[0].axvline(rate['mu'],label='$\mu_'+str(i)+'=$'+str(rate['mu']),c=rgt())
@@ -260,15 +271,23 @@ if __name__ == '__main__':
     #  axs[1].set_xlim([0,1])
     #  axs[1].set_ylim([0,1])
 
+    #  This is for generating a GIF
+    #  save_array_of_pictures(axs[1],samp_rates,invspecificities, sensitivities, './Images/Detection/rocgif/', 'ROC')
+
     # Likelihoods
+    l0s,l1s,v0s,v1s = (np.array(l0s), np.array(l1s), np.array(v0s), np.array(v1s))
+    #  axs[1].fill_between(samp_rates, mi0s,ma0s, color='blue', alpha=0.2)
+    #  axs[1].fill_between(samp_rates, mi1s,ma1s, color='green', alpha=0.2)
+    axs[1].fill_between(samp_rates, l0s-v0s,l0s+v0s, color='blue', alpha=0.2)
+    axs[1].fill_between(samp_rates, l1s-v1s,l1s+v1s, color='green', alpha=0.2)
     axs[1].plot(samp_rates, l0s,label='L0', c='blue')
     axs[1].plot(samp_rates, l1s,label='L1',c='green')
     axs[1].set_title('Likelihoods $\Pi_i P_{\Delta t}(i,j|H)$')
+    axs[1].set_xscale("log",base=2)
     plt.legend()
+
     now = datetime.datetime.now()
     time_frm = now.strftime('%Y-%m-%dT-%H:%M:%S')
 
     plt.savefig('Images/run_{}'.format(time_frm))
     plt.show()
-
-

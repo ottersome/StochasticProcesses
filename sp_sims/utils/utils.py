@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import argparse
+import os,sys
+from tqdm import tqdm
 from  ..statistics.statistics import trans_matrix
 
 # Extremely ad-hoc 
@@ -37,6 +39,29 @@ def show_trans_matrx(holdTimes_tape,state_tape):
     ax.set_title("Preliminary Transition transrix")
     plt.show()
     plt.close()
+
+def save_array_of_pictures(axs,thresholds,x_axis,varying_y_axis,path,name):
+    # New
+    if len(x_axis) != len(varying_y_axis):
+        raise IOError
+    # Create Dir if not existant
+    os.makedirs(os.path.abspath(path),exist_ok=True)
+
+    # Just a bit of caution
+    fin_image_name = path
+    if path[-1] == '/':
+        fin_image_name += '/'+name
+    fin_image_name += name
+        
+    # Num Zeros
+    z = 1
+    while len(varying_y_axis)/(10**z) > 0: z+= 1
+    point_sizes = np.exp(4*np.array(thresholds)/np.max(thresholds))
+
+    for i in tqdm(range(len(varying_y_axis))):
+        axs.scatter(x_axis[:i], varying_y_axis[:i], point_sizes[:i],color='b')
+        plt.savefig((fin_image_name+f'{i:05d}').format(i), dpi=100)
+
 
 def argparser():
     parser  = argparse.ArgumentParser()
@@ -95,5 +120,10 @@ def argparser():
                         type=int,
                         default =None,
                         help='Number of Samples when sampling')
+    parser.add_argument('--xres',
+                        dest='xres',
+                        type=int,
+                        default =1000,
+                        help='Resolution of X axis')
 
     return parser.parse_args()
