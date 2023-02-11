@@ -2,6 +2,7 @@
 __pycache__/
 Images/logsmooth*
 Images/run_*
+Images/d2023*
 *.py[cod]
 
 # C extensions
