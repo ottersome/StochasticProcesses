@@ -1,5 +1,8 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+Images/logsmooth*
+Images/run_*
+Images/d2023*
 *.py[cod]
 
 # C extensions

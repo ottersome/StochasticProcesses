@@ -162,6 +162,8 @@ def quick_sample(sampling_rate,state_tapes,holding_t_tapes):
         idxIncrement = 1
         while currT + sampling_time > transition_times[currStatIdx + idxIncrement - 1]:
             # This is for the case whereby we skipped some of the transition because it is too short
+            if currStatIdx + idxIncrement >= len(transition_times):
+                break
             idxIncrement += 1
         
         NoOfReplica = int(np.floor((transition_times[currStatIdx + idxIncrement - 1] - currT) / sampling_time))
