@@ -8,10 +8,8 @@
         "type": "python",
         "request": "launch",
         "cwd": "/Users/rac716/Research/StochasticProcesses",
-        //"python": "~/miniforge3/envs/rs39/bin/python",
-        "cwd": "~/Projects/StochasticProcesses/",
-        //"python": "~/miniforge3/envs/rs39/bin/python",
-        "python": "~/miniconda3/envs/datascience/bin/python",
+        //"cwd": "~/Projects/StochasticProcesses/",
+        "python": "~/miniforge3/envs/rs39/bin/python",
         //"python": "~/miniconda3/envs/datascience/bin/python",
         "stopOnEntry": true,
         "console": "externalTerminal",
@@ -27,9 +25,8 @@
             "--show_sanity_check","False"
             //"--method","log_mat",
             ],
-        //"program": "~/Research/StochasticProcesses/detection_22.py"
-        "program": "~/Projects/StochasticProcesses/detection_22.py"
-        //"program": "~/Research/StochasticProcesses/detection.py"
+        "program": "~/Research/StochasticProcesses/stationary_vs_transition.py"
+        //"program": "~/Projects/StochasticProcesses/detection_22.py"
       }
     }
   }

@@ -11,9 +11,11 @@ from sp_sims.statistics.statistics import *
 from sp_sims.estimators.algos import *
 from sp_sims.sanitycheck.truebirthdeath import *
 from sp_sims.utils.utils import *
+from sp_sims.curve_filters.lowpass import *
 import random
 from tqdm import tqdm
 from time import sleep
+
 
 
 
@@ -32,6 +34,18 @@ def print_mat_text(mat, axs):
             axs.text(j,i,"%.2f " % mat[i,j],ha="center",va="center",color="w",fontsize=8)
 
 # This function will take a guess at which process generated the entire thing.
+# Under the very unsafe assumption that we can take observations as independent
+def take_a_stationary_guess(tape, p0, p1):
+    num = 0
+    denum = 0
+    # All we need for this is the amount of states
+    for i in range(len(tape)):
+        state = tape[i]
+        num += np.log(p0[state])
+        denum += np.log(p1[state])
+
+    return 0 if num > denum else 1
+
 def take_a_guess(tape, p0, p1):
     num = 0
     denum = 0
@@ -146,18 +160,15 @@ if __name__ == '__main__':
     # We will create multiple different samples here
     # samp_rates = [args.samprate *2 ** j for j in range(10)]
     # samp_rates = np.linspace(0.001,16,1000)
-#    samp_rates = np.logspace(-3,12,args.xres, base=2)
-    samp_rates = 100/np.array([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 1])
+    samp_rates = np.logspace(-3,7,args.xres, base=2)
+    # samp_rates = 100/np.array([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 1])
+    # Decimation Using 10 
 
     tgm0 = np.array([[-rates0['lam'],rates0['lam']],[rates0['mu'],-rates0['mu']]])
     tgm1 = np.array([[-rates1['lam'],rates1['lam']],[rates1['mu'],-rates1['mu']]])
 
-
-    # Chose a random rate to test:
-    #ran_index = np.random.randint(780,1000,1)
-    #print("Random Index is ", ran_index)
-
-    hit_rates = [] 
+    hit_rates_transition = [] 
+    hit_rates_stationary= [] 
     l0s,l1s = ([],[])# Likelihood 
     v0s,v1s = ([],[])# Variances
     mi0s,mi1s = ([],[])
@@ -185,73 +196,78 @@ if __name__ == '__main__':
 
     base_samp_rate = samp_rates[-1]
     
-    guesses = np.zeros((len(samp_rates), args.detection_guesses))
-    l0cs = np.zeros((len(samp_rates), args.detection_guesses))
-    l1cs = np.zeros((len(samp_rates), args.detection_guesses))
+    guesses_transition = np.zeros((len(samp_rates), args.detection_guesses))
+    guesses_stationary = np.zeros((len(samp_rates), args.detection_guesses))
+    # Likelihoods for # SampRates X # Detection Guesses
+    l0_smpRates_x_gusses = np.zeros((len(samp_rates), args.detection_guesses))
+    l1_smpRates_x_gusses = np.zeros((len(samp_rates), args.detection_guesses))
     
+    # Transition Probabilities
     true_p0s = []
     true_p1s = []
-    # Crete all the *known* probability functions.
+
+    # Stationary Probabilities 
+    p0_stationary = [rates0['mu']/np.sum(list(rates0.values())),rates0['lam']/np.sum(list(rates0.values()))]
+    p1_stationary = [rates1['mu']/np.sum(list(rates1.values())),rates1['lam']/np.sum(list(rates1.values()))]
+    
+
     for srIdx, cur_samp_rate in enumerate(samp_rates):
         true_p0s.append(get_true_trans_probs(Q=tgm0*(1/cur_samp_rate)))
         true_p1s.append(get_true_trans_probs(Q=tgm1*(1/cur_samp_rate)))
 
-    # Go Over the Detection Guesses
+    #############################################
+    # Take Detection Guesses
+    #    (and return Likelihood Ratio)
+    #############################################
     for i in tqdm(np.arange(args.detection_guesses)):
-        
-        # Prepare for Decimation: First sample with the quickest rate. -> Smallest Unit of Time Interval
         sampled_tape = quick_sample(base_samp_rate, sts[i],hts[i])
-        # Go Over the 
+        
         for srIdx, cur_samp_rate in enumerate(samp_rates):
-            # Fetch Values for Current Rate
             true_p0 = true_p0s[srIdx]
             true_p1 = true_p1s[srIdx]
             true_ps = [true_p0,true_p1]
             
-            #LG: How many of the baseline intervals fit into the slow rate interval
             decimateInterval = int(base_samp_rate/cur_samp_rate)
             tmpSampTape = sampled_tape[0::decimateInterval]
-            ###################################################
-            # Option 1 without limit on the number of samples #
-            ############################################
+            ###### Option 1 without limit on the number of samples ############
             # guesses[srIdx, i] = take_a_guess(tmpSampTape, true_p0, true_p1)
             # # l0, l1 = return_ls(tmpSampTape, true_p0, true_p1) # Shall not use this as it results in very small quantities
             # l0 = return_lr(tmpSampTape, true_p0, true_p1)
             # l1 = 1
-            ############################################
-            # Option 2 with limited number of samples ##
-            ############################################
-            limited_sampled_tape = tmpSampTape[0:args.num_samples]
-            guesses[srIdx, i] = take_a_guess(limited_sampled_tape, true_p0, true_p1)
+            ###################################################################
+            ############ Option 2 with limited number of samples ##############
+            guesses_transition[srIdx, i] = take_a_guess(tmpSampTape[0:args.num_samples], true_p0, true_p1)
+            guesses_stationary[srIdx, i] = take_a_stationary_guess(tmpSampTape[0:args.num_samples], p0_stationary, p1_stationary)
             # l0, l1 = return_ls(tmpSampTape[0:args.num_samples], true_p0, true_p1) # Shall not use this as it results in very small quantities
-            l0 = return_lr(limited_sampled_tape, true_p0, true_p1)
+            l0 = return_lr(tmpSampTape[0:args.num_samples], true_p0, true_p1)
             l1 = 1
             ###################################################################
 
-            l0cs[srIdx, i] = l0
-            l1cs[srIdx, i] = l1
+            l0_smpRates_x_gusses[srIdx, i] = l0
+            l1_smpRates_x_gusses[srIdx, i] = l1
             
+
+
     num_negs = np.sum(true_values == 0)#TN + FP
     num_pos = np.sum(true_values == 1)#TP + FN
-
-    # At this point we have our guesses saved
-    # At this point we can start looking at 
-    # * Sensitivities
-    # Inv Specificities
+            
+    #############################################
+    # Likelihoods
+    #############################################
     for srIdx, cur_samp_rate in enumerate(samp_rates):
-        # For Plotting ROC Curve
-        guess = guesses[srIdx]
-        l0c = l0cs[srIdx]
-        l1c = l1cs[srIdx]
-        hits_index = (true_values == guess)
+        # All Guesses for this particular sampling rate
+        guess_transition = guesses_transition[srIdx]
+        guess_stationary = guesses_stationary[srIdx]
+
+        l0c = l0_smpRates_x_gusses[srIdx]
+        l1c = l1_smpRates_x_gusses[srIdx]
+        hits_index = (true_values == guess_transition)
         tp = (true_values[hits_index] == 1).sum()
         tn = (true_values[hits_index] == 0).sum()
 
-        # Correct
         sensitivities.append(tp/num_pos)
         invspecificities.append(1-(tn/num_negs))
 
-        # False Positive and Negative Rates
         fprs.append((num_negs-tn)/(num_negs))
         fnrs.append((num_pos-tp)/(num_pos))# Type 2 Error
         
@@ -271,78 +287,26 @@ if __name__ == '__main__':
         mi1s.append(np.min(lInterest))
         ma1s.append(np.max(lInterest))
 
-        num_hits = (true_values == guess).sum()
-        hit_rates.append(num_hits/args.detection_guesses)
+        num_hits_transition = (true_values == guess_transition).sum()
+        num_hits_stationary = (true_values == guess_stationary).sum()
+        hit_rates_transition.append(num_hits_transition/args.detection_guesses)
+        hit_rates_stationary.append(num_hits_stationary/args.detection_guesses)
 
 #    smoothed_hits = savitzky_golay(hit_rates, 21, 3)
     
-
-###################### Earlier version #############################
-    # for cur_samp_rate in tqdm(samp_rates):
-        
-    #     # Loop through multiple sampling rate
-    #     # print('Trying Sampling Rate: ',cur_samp_rate)
-    #     guess = []
-
-    #     true_p0 = get_true_trans_probs(Q=tgm0*(1/cur_samp_rate))
-    #     true_p1 = get_true_trans_probs(Q=tgm1*(1/cur_samp_rate))
-
-    #     true_ps = [true_p0,true_p1]
-        
-    #     l0c,l1c = ([],[])
-    #     # For every sample rate we will generate sample path and guess from it
-    #     for i in range(args.detection_guesses):
-    #         # Generate a path from either q0 or 1
-    #         # TODO: Use decimation to make it faster
-    #         sampled_tape = simple_sample(cur_samp_rate, sts[i],hts[i],args.num_samples)
-    #         guess.append(take_a_guess(sampled_tape, true_p0, true_p1))
-
-    #         assert len(sampled_tape) >= args.num_samples, "Not enough samples"
-
-    #         l0, l1 = return_ls(sampled_tape, true_p0, true_p1)
-
-    #         l0c.append(l0)
-    #         l1c.append(l1)
-
-    #     # For Plotting ROC Curve
-    #     hits_index = (true_values == guess)
-    #     num_negs = np.sum(true_values == 0)#TN + FP
-    #     num_pos = np.sum(true_values == 1)#TP + FN
-    #     tp = (true_values[hits_index] == 1).sum()
-    #     tn = (true_values[hits_index] == 0).sum()
-
-    #     sensitivities.append(tp/num_pos)
-    #     invspecificities.append(1-(tn/num_negs))
-
-    #     fprs.append((num_negs-tn)/(num_negs))
-    #     fnrs.append((num_pos-tp)/(num_pos))# Type 2 Error
-
-    #     j += 1
-    #     #TODO Likelihood is on *average* larger
-    #     l0s.append(np.mean(l0c))
-    #     l1s.append(np.mean(l1c))
-    #     v0s.append(np.var(l0c))
-    #     v1s.append(np.var(l1c))
-    #     mi0s.append(np.min(l0c))
-    #     ma0s.append(np.max(l0c))
-    #     mi1s.append(np.min(l1c))
-    #     ma1s.append(np.max(l1c))
-
-
-    #     num_hits = (true_values == guess).sum()
-    #     hit_rates.append(num_hits/args.detection_guesses)
-
-    # smoothed_hits = savitzky_golay(hit_rates, 21, 3)
-#####################################################################
-
+    #############################################
+    # Plotting
+    #############################################
     fig, axs = plt.subplots(1,2)
     fig.tight_layout()
     fig.set_size_inches(16,10)
 
     plt.rcParams['text.usetex'] = True
     
-    axs[0].plot(samp_rates,hit_rates,label='Accuracy',color='red',alpha=1,linewidth=2) 
-    
+    # Accuracy Plotting
+    axs[0].plot(samp_rates,hit_rates_transition,label='Transition Prob Accuracy',color='red',alpha=1,linewidth=2) 
+    axs[0].plot(samp_rates,hit_rates_stationary,label='Stationary Prob Accuracy',color='orange',alpha=1,linewidth=2) 
+    # Plot the Scalar Rates
     for i,rate in enumerate(rates):
         axs[0].axvline(rate['lam'],label='$\lambda_'+str(i)+'=$'+str(rate['lam']),c=rgt())
         axs[0].axvline(rate['mu'],label='$\mu_'+str(i)+'=$'+str(rate['mu']),c=rgt())
@@ -351,10 +315,13 @@ if __name__ == '__main__':
     axs[0].legend()
     
     l0s,l1s,v0s,v1s = (np.array(l0s), np.array(l1s), np.array(v0s), np.array(v1s))
+    # Min-Max Values of Likelihoods
     axs[1].fill_between(samp_rates, mi0s,ma0s, color='blue', alpha=0.2)
     axs[1].fill_between(samp_rates, mi1s,ma1s, color='green', alpha=0.2)
+    # Likelihoods
     axs[1].plot(samp_rates, l0s,label='$L_0$', c='blue')
     axs[1].plot(samp_rates, l1s,label='$L_1$',c='green')
+    # Set Our Scales
     axs[1].set_title('Likelihoods (H0: $\\frac{L_0}{L_1}$; H1: $\\frac{L_1}{L_0}$)')
     axs[1].set_xscale("log",base=2)
     axs[1].set_yscale("log",base=10)
@@ -378,63 +345,3 @@ if __name__ == '__main__':
     plt.savefig(title)
     plt.show()
 
-    # ####################################
-    # # Starting With the Plotting
-    # ####################################
-    # fig, axs = plt.subplots(1,3)
-    # fig.tight_layout()
-    # fig.set_size_inches(16,10)
-
-    # plt.rcParams['text.usetex'] = True
-    # #  plt.plot(samp_rates,hit_rates)
-    # # plt.plot(l0s,label='Null Likelihood')
-    # # plt.plot(l1s,label='Alternative Likelihood')
-    # # axs[0].plot(samp_rates,(-1)*np.log(hit_rates),label='Sampling Rates(log scale)')
-    # axs[0].plot(samp_rates,hit_rates,label='Accuracy',color='gray',alpha=0.4,linewidth=1)
-    # axs[0].plot(samp_rates,smoothed_hits,label='Smoothed Accuracy (SG-Filter)',color='green')
-    # # axs[0].plot(samp_rates, fprs, label='False Positive Rates(T2)', color='b')
-    # # axs[0].plot(samp_rates, fnrs, label='False Negative Rates(T1)', color='r')
-
-    # for i,rate in enumerate(rates):
-    #     axs[0].axvline(rate['lam'],label='$\lambda_'+str(i)+'=$'+str(rate['lam']),c=rgt())
-    #     axs[0].axvline(rate['mu'],label='$\mu_'+str(i)+'=$'+str(rate['mu']),c=rgt())
-    # axs[0].set_title('$\\frac{G_C}{G_T}$ with Respect to Sampling Rate')
-    # #axs[0].set_xscale("log",base=2)
-    # axs[0].legend()
-
-    # # ROC Cruve
-    # # axs[1].scatter(invspecificities, sensitivities, np.exp(3*np.array(samp_rates)/np.max(samp_rates)))
-    # # axs[1].set_title('ROC Curve')
-    # # axs[1].set_xlabel('1-Specificity')
-    # # axs[1].set_ylabel('Sensitivity')
-    # # axs[1].set_xlim([0,1])
-    # # axs[1].set_ylim([0,1])
-
-    # #  This is for generating a GIF
-    # # save_array_of_pictures(axs[1],samp_rates,invspecificities, sensitivities, './Images/Detection/rocgif/', 'ROC')
-
-    # # Likelihoods
-    # l0s,l1s,v0s,v1s = (np.array(l0s), np.array(l1s), np.array(v0s), np.array(v1s))
-    # # axs[1].fill_between(samp_rates, mi0s,ma0s, color='blue', alpha=0.2)
-    # # axs[1].fill_between(samp_rates, mi1s,ma1s, color='green', alpha=0.2)
-    # axs[1].fill_between(samp_rates, l0s-v0s,l0s+v0s, color='blue', alpha=0.2)
-    # axs[1].fill_between(samp_rates, l1s-v1s,l1s+v1s, color='green', alpha=0.2)
-    # axs[1].plot(samp_rates, l0s,label='$L_0$', c='blue')
-    # axs[1].plot(samp_rates, l1s,label='$L_1$',c='green')
-    # axs[1].set_title('Likelihoods $-\log\Pi_i P_{\Delta t}(i,j|H)$')
-    # axs[1].set_xscale("log",base=2)
-    # axs[1].legend()
-
-
-    # axs[2].plot(samp_rates,np.divide(l0s,l1s),label="$\\frac{L_0}{L_1}$", color='blue')
-    # axs[2].set_title("$\\frac{L_0}{L_1}$")
-    # axs[2].set_xscale("log",base=2)
-    # axs[2].legend()
-
-
-    # now = datetime.datetime.now()
-    # time_frm = now.strftime('%Y-%m-%dT-%H:%M:%S')
-
-    # title = 'Images/d{}_'.format(time_frm)+args.figtitle if args.figtitle != None else 'Images/run_{}'.format(time_frm)
-    # plt.savefig(title)
-    # plt.show()
